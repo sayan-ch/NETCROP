@@ -1,9 +1,3 @@
----
-editor_options: 
-  markdown: 
-    wrap: 72
----
-
 # NETCROP: Network Cross-Validation with Overlapping Partitions
 
 This repository contains the implementations of NETCROP, a method for
