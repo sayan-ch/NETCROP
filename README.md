@@ -12,7 +12,7 @@ This repository contains the code used for the paper:
 
 Install:
 
-- R 4.6.1 (the version recorded in `renv.lock`)
+- R 4.6 (the version recorded in `renv.lock`, however the codes should run in R 4.4 or newer)
 - RStudio, recommended
 - A C++ compiler:
   - macOS: Xcode Command Line Tools (`xcode-select --install` in Terminal)

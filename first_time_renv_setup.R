@@ -29,6 +29,31 @@ if (!is.null(locked_r) && !identical(locked_r, running_r)) {
   )
 }
 
+minimum_r_version <- numeric_version("4.4.0")
+
+if (getRversion() < minimum_r_version) {
+  stop(
+    "NETCROP requires R 4.4.0 or newer. ",
+    "You are using R ", getRversion(), ". ",
+    "Please update R before running this setup script.",
+    call. = FALSE
+  )
+}
+
+recommended_packages <- c("Matrix", "cluster", "lattice")
+missing_recommended <- recommended_packages[
+  !vapply(recommended_packages, requireNamespace, logical(1), quietly = TRUE)
+]
+
+if (length(missing_recommended) > 0L) {
+  stop(
+    "Your R installation is missing recommended packages: ",
+    paste(missing_recommended, collapse = ", "),
+    "\nInstall the complete R distribution, then rerun this script.",
+    call. = FALSE
+  )
+}
+
 message("Restoring the project library from renv.lock...")
 tryCatch(
   renv::restore(prompt = interactive()),

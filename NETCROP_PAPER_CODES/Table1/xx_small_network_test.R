@@ -95,7 +95,8 @@ for (sim in ecv.simulations) {
       result <- ECV.stability.BM(
         A = net$A, max.K = max.K, train.p = 0.9, cv = 3, R = R.use,
         tau = 0, dc.est = 2, loss = loss.use,
-        ncore = ncore, seed = 2 + sim * 100
+        ncore = ncore, seed = 2 + sim * 100,
+        rngR = TRUE
       )
     })
     netcrop_status(sim, nsim, "ECV", timing[3],
