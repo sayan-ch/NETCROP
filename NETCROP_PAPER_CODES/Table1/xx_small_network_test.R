@@ -70,7 +70,8 @@ for (sim in ncv.simulations) {
       result <- NCV.stability.BM(
         A = net$A, max.K = max.K, cv = 3, R = R.use, tau = 0,
         laplace = FALSE, dc.est = 2, loss = loss.use,
-        ncore = ncore, seed = 2 + sim * 100
+        ncore = ncore, seed = 2 + sim * 100,
+        rngR = TRUE # recommended for small networks for better clara agreements
       )
     })
     netcrop_status(sim, nsim, "NCV", timing[3],
@@ -95,8 +96,7 @@ for (sim in ecv.simulations) {
       result <- ECV.stability.BM(
         A = net$A, max.K = max.K, train.p = 0.9, cv = 3, R = R.use,
         tau = 0, dc.est = 2, loss = loss.use,
-        ncore = ncore, seed = 2 + sim * 100,
-        rngR = TRUE
+        ncore = ncore, seed = 2 + sim * 100
       )
     })
     netcrop_status(sim, nsim, "ECV", timing[3],

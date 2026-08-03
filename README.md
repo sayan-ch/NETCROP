@@ -39,7 +39,7 @@ RStudio and open `NETCROP.Rproj` directly.
 Run exactly this command in the R console:
 
 ```r
-source("first_time_renv_setup.R")
+source(file.path(here::here(), "first_time_renv_setup.R"))
 ```
 
 The setup script:
@@ -65,11 +65,11 @@ The small tests use `n = 500`, `K` or `d = 3`, a maximum candidate value of 5,
 `p.test = 0.1`, and two simulations.
 
 ```r
-source("NETCROP_PAPER_CODES/Table1/xx_small_network_test.R")
-source("NETCROP_PAPER_CODES/Table2/xx_small_network_test.R")
-source("NETCROP_PAPER_CODES/Table3/xx_small_network_test.R")
-source("NETCROP_PAPER_CODES/Table4_realdata/xx_small_network_test.R")
-source("NETCROP_PAPER_CODES/Figure2/xx_small_network_test.R")
+source(file.path(here::here(), "NETCROP_PAPER_CODES/Table1/xx_small_network_test.R"))
+source(file.path(here::here(), "NETCROP_PAPER_CODES/Table2/xx_small_network_test.R"))
+source(file.path(here::here(), "NETCROP_PAPER_CODES/Table3/xx_small_network_test.R"))
+source(file.path(here::here(), "NETCROP_PAPER_CODES/Table4_realdata/xx_small_network_test.R"))
+source(file.path(here::here(), "NETCROP_PAPER_CODES/Figure2/xx_small_network_test.R"))
 ```
 
 Run one command at a time. The Table 4 small script is a synthetic DCBM smoke
@@ -84,41 +84,41 @@ RAM and can run for hours depending on hardware and the selected method.
 ### Table 1: SBM and DCBM
 
 ```r
-source("NETCROP_PAPER_CODES/Table1/case1_sbmK5.R")
-source("NETCROP_PAPER_CODES/Table1/case2_sbmK20.R")
-source("NETCROP_PAPER_CODES/Table1/case3_dcbmK10.R")
-source("NETCROP_PAPER_CODES/Table1/case4_dcbmK20.R")
+source(file.path(here::here(), "NETCROP_PAPER_CODES/Table1/case1_sbmK5.R"))
+source(file.path(here::here(), "NETCROP_PAPER_CODES/Table1/case2_sbmK20.R"))
+source(file.path(here::here(), "NETCROP_PAPER_CODES/Table1/case3_dcbmK10.R"))
+source(file.path(here::here(), "NETCROP_PAPER_CODES/Table1/case4_dcbmK20.R"))
 ```
 
 ### Table 2: RDPG
 
 ```r
-source("NETCROP_PAPER_CODES/Table2/case1_zeta0_75.R")
-source("NETCROP_PAPER_CODES/Table2/case2_zeta0_70.R")
-source("NETCROP_PAPER_CODES/Table2/case3_zeta0_65.R")
+source(file.path(here::here(), "NETCROP_PAPER_CODES/Table2/case1_zeta0_75.R"))
+source(file.path(here::here(), "NETCROP_PAPER_CODES/Table2/case2_zeta0_70.R"))
+source(file.path(here::here(), "NETCROP_PAPER_CODES/Table2/case3_zeta0_65.R"))
 ```
 
 ### Table 3: latent space models
 
 ```r
-source("NETCROP_PAPER_CODES/Table3/case1_d2_a0.R")
-source("NETCROP_PAPER_CODES/Table3/case2_d2_a1.R")
-source("NETCROP_PAPER_CODES/Table3/case3_d5_a0.R")
-source("NETCROP_PAPER_CODES/Table3/case4_d5_a1.R")
+source(file.path(here::here(), "NETCROP_PAPER_CODES/Table3/case1_d2_a0.R"))
+source(file.path(here::here(), "NETCROP_PAPER_CODES/Table3/case2_d2_a1.R"))
+source(file.path(here::here(), "NETCROP_PAPER_CODES/Table3/case3_d5_a0.R"))
+source(file.path(here::here(), "NETCROP_PAPER_CODES/Table3/case4_d5_a1.R"))
 ```
 
 ### Table 4: real networks
 
 ```r
-source("NETCROP_PAPER_CODES/Table4_realdata/DBLP_analysis.R")
-source("NETCROP_PAPER_CODES/Table4_realdata/Twitch_analysis.R")
+source(file.path(here::here(), "NETCROP_PAPER_CODES/Table4_realdata/DBLP_analysis.R"))
+source(file.path(here::here(), "NETCROP_PAPER_CODES/Table4_realdata/Twitch_analysis.R"))
 ```
 
 ### Figures
 
 ```r
-source("NETCROP_PAPER_CODES/Figure2/Figure2_partune_rsc.R")
-source("NETCROP_PAPER_CODES/FigureS3/FigureS3_small_networks.R")
+source(file.path(here::here(), "NETCROP_PAPER_CODES/Figure2/Figure2_partune_rsc.R"))
+source(file.path(here::here(), "NETCROP_PAPER_CODES/FigureS3/FigureS3_small_networks.R")
 ```
 
 ## Existing results: replace, resume, or archive
@@ -152,14 +152,14 @@ If it is not set, batch mode defaults to `replace` and restarts from simulation
 From a shell:
 
 ```sh
-NETCROP_OUTPUT_ACTION=resume Rscript -e 'source("NETCROP_PAPER_CODES/Table1/case1_sbmK5.R")'
+NETCROP_OUTPUT_ACTION=resume Rscript -e 'source(file.path(here::here(), "NETCROP_PAPER_CODES/Table1/case1_sbmK5.R")'
 ```
 
 From R before sourcing a script:
 
 ```r
 Sys.setenv(NETCROP_OUTPUT_ACTION = "resume")
-source("NETCROP_PAPER_CODES/Table1/case1_sbmK5.R")
+source(file.path(here::here(), "NETCROP_PAPER_CODES/Table1/case1_sbmK5.R")
 ```
 
 To return to interactive menus in the same R session:
@@ -179,7 +179,7 @@ For batch jobs, large NCV and ECV runs are skipped unless explicitly enabled:
 
 ```sh
 NETCROP_RUN_LARGE_CV=yes NETCROP_OUTPUT_ACTION=resume \
-Rscript -e 'source("NETCROP_PAPER_CODES/Table1/case1_sbmK5.R")'
+Rscript -e 'source(file.path(here::here(), "NETCROP_PAPER_CODES/Table1/case1_sbmK5.R")'
 ```
 
 Accepted true values are `yes`, `true`, and `1`; accepted false values are
