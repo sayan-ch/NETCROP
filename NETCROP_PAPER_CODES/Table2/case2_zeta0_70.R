@@ -1,21 +1,23 @@
 setwd(file.path(here::here("NETCROP_PAPER_CODES", "Table2")))
 
-if(!dir.exists(c("output")))
-  dir.create("output")
-
-if(!dir.exists("logs"))
-  dir.create("logs")
-
-
 HELPERS_DIR <- file.path(here::here("NETCROP_PAPER_CODES", "helpers"))
 
 source(file.path(HELPERS_DIR, "General_helpers.R"))
 source(file.path(HELPERS_DIR, "RDPG_helpers.R"))
 
+RUN_NAME <- "case2_zeta0_70"
+run.paths <- netcrop_output_action(file.path("output", RUN_NAME),
+                                   file.path("logs", RUN_NAME))
+OUTPUT_DIR <- run.paths$output_dir
+LOG_DIR <- run.paths$log_dir
+OUTPUT_ACTION <- run.paths$action
+
 ################################################################################
+################################################################################
+
 version <- 1
-ncore <- 40 # set the number of available processors to parallelize
-nsim <- 100
+ncore <- 5L # set the number of available processors to parallelize
+nsim <- 100L
 
 # Case 1 of Table 2:
 # RDPG with n = 10000 nodes and d = 10 dimension
@@ -23,6 +25,11 @@ nsim <- 100
 n <- 10^4
 d <- 10
 xi <- 0.70
+
+################################################################################
+################################################################################
+################################################################################
+################################################################################
 
 # NETCROP parameters
 ## Parameter selection
@@ -35,11 +42,20 @@ R <- c(1, 5)
 max.d <- 20
 loss.use <- c("l2")
 
+nc.file <- file.path(OUTPUT_DIR, paste0("case2_netcrop_v", version, ".csv"))
+ecv.file <- file.path(OUTPUT_DIR, paste0("case2_ecv_v", version, ".csv"))
+small.script <- file.path(here::here("NETCROP_PAPER_CODES", "Table2"),
+                          "xx_small_network_test.R")
+
 ## Run NETCROP
 all.nc <- list()
 count <- 1
-
-for(sim in 1:nsim){
+nc.simulations <- netcrop_resume_csv(
+  nc.file, nsim, OUTPUT_ACTION,
+  expected_rows = length(R) * length(s) * length(o),
+  key_columns = c("nsim", "R", "s", "o", "loss_function")
+)
+for(sim in nc.simulations){
   net <- RDPG.gen(n = n, d = d, X = NULL, rho = xi,
                   ncore = ncore, seed = 200 + sim)
 
@@ -60,10 +76,10 @@ for(sim in 1:nsim){
         })
 
         gc()
-        cat("Sim ", sim, "::", "Time:", time.nc[3], ":: d_hat : ",
-            paste(out.nc$`d.hat.each.rep (l2)`, collapse = ", "), "\n")
+        netcrop_status(sim, nsim, "NETCROP", time.nc[3],
+                       out.nc$`d.hat.each.rep (l2)`, R.use)
 
-        nc.tab <- data.table::data.table(
+        nc.tab <- tibble::tibble(
           nsim = sim,
           model = "RDPG", n = n, d = d,
           xi = xi, lambda = lambda,
@@ -76,14 +92,16 @@ for(sim in 1:nsim){
         )
 
         readr::write_csv(
-          nc.tab, file = file.path(paste0("output/case2_netcrop_v", version, ".csv")),
-          append = file.exists(paste0("output/case2_netcrop_v", version, ".csv"))
+          nc.tab, file = nc.file, append = file.exists(nc.file)
         )
 
         all.nc[[count]] <- list(time = time.nc, out = out.nc)
 
         saveRDS(
-          all.nc[[count]], file = file.path(paste0("logs/case2_netcrop_v", version, ".rds"))
+          all.nc[[count]], file = file.path(
+            LOG_DIR,
+            paste0("case2_netcrop_v", version, "_sim", sim, "_R", R.use, ".rds")
+          )
         )
 
         count <- count + 1
@@ -92,13 +110,21 @@ for(sim in 1:nsim){
   }
 }
 
-
+################################################################################
+################################################################################
+################################################################################
+################################################################################
 
 ## Run ECV
 all.ecv <- list()
 count <- 1
 R <- c(1, 20)
-for(sim in 1:nsim){
+run.ecv <- netcrop_confirm_large_cv(n, "ECV", small.script)
+ecv.simulations <- netcrop_resume_csv(
+  ecv.file, nsim, OUTPUT_ACTION, expected_rows = length(R),
+  key_columns = c("nsim", "R", "loss_function")
+)
+if (run.ecv) for(sim in ecv.simulations){
   net <- RDPG.gen(n = n, d = d, X = NULL, rho = xi,
                   ncore = ncore, seed = 200 + sim)
 
@@ -116,10 +142,10 @@ for(sim in 1:nsim){
 
     gc()
 
-    cat("Sim ", sim, "::", "Time:", time.ecv[3], "::",
-        paste(out.ecv$best.l2.each.rep, collapse = ", "), "\n")
+    netcrop_status(sim, nsim, "ECV", time.ecv[3],
+                   out.ecv$best.l2.each.rep, R.use)
 
-    ecv.tab <- data.table::data.table(
+    ecv.tab <- tibble::tibble(
       nsim = sim,
       model = "RDPG", n = n, d = d,
       xi = xi, lambda = lambda,
@@ -132,14 +158,16 @@ for(sim in 1:nsim){
     )
 
     readr::write_csv(
-      ecv.tab, file = file.path(paste0("output/case2_ecv_v", version, ".csv")),
-      append = file.exists(paste0("output/case2_ecv_v", version, ".csv"))
+      ecv.tab, file = ecv.file, append = file.exists(ecv.file)
     )
 
     all.ecv[[count]] <- list(time = time.ecv, out = out.ecv)
 
     saveRDS(
-      all.ecv[[count]], file = file.path(paste0("logs/case2_ecv_v", version, ".rds"))
+      all.ecv[[count]], file = file.path(
+        LOG_DIR,
+        paste0("case2_ecv_v", version, "_sim", sim, "_R", R.use, ".rds")
+      )
     )
 
     count <- count + 1
@@ -147,11 +175,14 @@ for(sim in 1:nsim){
 }
 
 ################################################################################
-nc.all <- readr::read_csv(file.path(paste0("output/case2_netcrop_v", version, ".csv")))
+################################################################################
+################################################################################
 
-View(nc.all |> dplyr::group_by(s, o, R) |>
+nc.all <- readr::read_csv(nc.file, show_col_types = FALSE)
+
+print(nc.all |> dplyr::group_by(s, o, R) |>
   dplyr::summarize(
-    nsim = dplyr::n(),,
+    nsim = dplyr::n(),
     avg.deg = mean(lambda),
     mean.time = mean(run_time),
     accu = 100 * mean(d_hat == d),
@@ -159,18 +190,18 @@ View(nc.all |> dplyr::group_by(s, o, R) |>
     mean.dhat = mean(d_hat)
   ))
 
-ecv.all <- readr::read_csv(file.path(paste0("output/case2_ecv_v", version, ".csv")))
-
-View(ecv.all |> dplyr::group_by(s, o, R) |>
+if (file.exists(ecv.file)) {
+  ecv.all <- readr::read_csv(ecv.file, show_col_types = FALSE)
+  print(ecv.all |> dplyr::group_by(R) |>
   dplyr::summarize(
-    nsim = dplyr::n(),,
+    nsim = dplyr::n(),
     avg.deg = mean(lambda),
     mean.time = mean(run_time),
     accu = 100 * mean(d_hat == d),
     mad = mean(abs(d_hat - d)),
     mean.dhat = mean(d_hat)
   ))
-
+}
 
 
 

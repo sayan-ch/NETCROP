@@ -1,165 +1,312 @@
 # NETCROP: Network Cross-Validation with Overlapping Partitions
 
-This repository contains the implementations of NETCROP, a method for
-network cross-validation with overlapping partitions. The codes in the
-"NETCROP_PAPER_CODES" can be used to replicate the numerical results in
-the paper "Network Cross-Validation and Model Selection via Subsampling"
-[1] by Sayan Chakrabarty, Srijan Sengupta and Yuguo Chen
-(<https://arxiv.org/abs/2504.06903>).
+This repository contains the code used for the paper:
 
-## Organization
+> Chakrabarty, S., Sengupta, S., and Chen, Y. (2025).
+> “Network Cross-Validation and Model Selection via Subsampling.”
+> arXiv:2504.06903.
 
-The repository is organized as follows:
+## Start here
 
-### `NETCROP_PAPER_CODES/`:
+### 1. Install the prerequisites
 
-#### `Table1/`:
+Install:
 
--   `case1_sbmK5.R`: SBM with $n = 10000$ and $K = 5$.
+- R 4.6.1 (the version recorded in `renv.lock`)
+- RStudio, recommended
+- A C++ compiler:
+  - macOS: Xcode Command Line Tools (`xcode-select --install` in Terminal)
+  - Windows: the Rtools version matching your R installation
+  - Linux: `build-essential`, or the equivalent compiler toolchain
 
--   `case2_sbmK20.R`: SBM with $n = 10000$ and $K = 20$.
+### 2. Open the project correctly
 
--   `case3_dcbmK10.R`: DCBM with $n = 10000$ and $K = 10$.
+Open `NETCROP.Rproj` in RStudio. Do not open an individual R script first.
 
--   `case4_dcbmK20.R`: DCBM with $n = 10000$ and $K = 20$.
+In the R console, verify the working directory:
 
-#### `Table2/`:
+```r
+getwd()
+file.exists("NETCROP.Rproj")
+file.exists("renv.lock")
+```
 
--   `case1_zeta0_75.R`: RDPG with $n = 10000$, $d = 5$ and
-    $\zeta = 0.75$.
+Both `file.exists()` calls must return `TRUE`. If either returns `FALSE`, close
+RStudio and open `NETCROP.Rproj` directly.
 
--   `case2_zeta0_70.R`: RDPG with $n = 10000$, $d = 5$ and
-    $\zeta = 0.70$.
+### 3. Restore the package environment
 
--   `case3_zeta0_65.R`: RDPG with $n = 10000$, $d = 5$ and
-    $\zeta = 0.65$.
+Run exactly this command in the R console:
 
-#### `Table3/`:
+```r
+source("first_time_renv_setup.R")
+```
 
--   `case1_d2_a0.R`: LSM with $n = 1000$, $d = 2$ and $\alpha = 0$.
+The setup script:
 
--   `case2_d2_a1.R`: LSM with $n = 1000$, $d = 2$ and $\alpha = 1$.
+1. checks that R is at the repository root;
+2. installs `renv` from CRAN if necessary;
+3. restores the exact packages recorded in `renv.lock`;
+4. reports dependency inconsistencies; and
+5. compiles and loads the general C++ helpers as a smoke test.
 
--   `case3_d5_a0.R`: LSM with $n = 1000$, $d = 2$ and $\alpha = 2$.
+If package installation is requested, answer yes. A successful run ends with:
 
--   `case4_d5_a1.R`: LSM with $n = 1000$, $d = 2$ and $\alpha = 3$.
+```text
+NETCROP environment restored and helper smoke test passed.
+```
 
-#### `Table4_realdata`:
+You normally run this setup only once per fresh clone or after deleting the
+project library.
 
--   `DBLP/`: Contains DBLP 4-area network in .csv and .rds formats.
+### 4. Run a small test first
 
--   `DBLP_analysis.R`: NETCROP, NCV and ECV on DBLP author-conference
-    network.
+The small tests use `n = 500`, `K` or `d = 3`, a maximum candidate value of 5,
+`p.test = 0.1`, and two simulations.
 
--   `Twitch/`: Contains Twitch social network in .csv and .rds formats.
-    It also contains the full Twitch network and the cleanup codes to
-    obtain the exact subnetwork used in the paper.
+```r
+source("NETCROP_PAPER_CODES/Table1/xx_small_network_test.R")
+source("NETCROP_PAPER_CODES/Table2/xx_small_network_test.R")
+source("NETCROP_PAPER_CODES/Table3/xx_small_network_test.R")
+source("NETCROP_PAPER_CODES/Table4_realdata/xx_small_network_test.R")
+source("NETCROP_PAPER_CODES/Figure2/xx_small_network_test.R")
+```
 
--   `Twitch_analysis.R`: NETCROP on Twitch social network.
+Run one command at a time. The Table 4 small script is a synthetic DCBM smoke
+test for the same model-selection routines; it does not reproduce a real-data
+result.
 
-#### `Figure2/`:
+## Running the paper cases
 
--   `Figure2_partune_rsc.R`: Parameter tuning for regularized spectral
-    clustering on DCBM with $n = 10000$ and $K = 5$.
+Full cases can be expensive. Networks with `n = 10000` may require substantial
+RAM and can run for hours depending on hardware and the selected method.
 
-#### `FigureS3/`:
+### Table 1: SBM and DCBM
 
--   `FigureS3_small_networks.R`: NETCROP, NCV and ECV on small networks
-    with $n \in \{200, 300, 400, 500\}$ for SBM and DCBM with $K = 3$.
+```r
+source("NETCROP_PAPER_CODES/Table1/case1_sbmK5.R")
+source("NETCROP_PAPER_CODES/Table1/case2_sbmK20.R")
+source("NETCROP_PAPER_CODES/Table1/case3_dcbmK10.R")
+source("NETCROP_PAPER_CODES/Table1/case4_dcbmK20.R")
+```
 
-#### `helpers/`:
+### Table 2: RDPG
 
--   `General_helpers.R`: Contains general helper functions used in all
-    examples, including parameter selection for NETCROP.
+```r
+source("NETCROP_PAPER_CODES/Table2/case1_zeta0_75.R")
+source("NETCROP_PAPER_CODES/Table2/case2_zeta0_70.R")
+source("NETCROP_PAPER_CODES/Table2/case3_zeta0_65.R")
+```
 
--   `SBM_DCBM_helper.R`: Contains the functions
+### Table 3: latent space models
 
-    -   **`netcrop_blockmodel`: Function to perform NETCROP for block
-        models (SBM and DCBM).**
+```r
+source("NETCROP_PAPER_CODES/Table3/case1_d2_a0.R")
+source("NETCROP_PAPER_CODES/Table3/case2_d2_a1.R")
+source("NETCROP_PAPER_CODES/Table3/case3_d5_a0.R")
+source("NETCROP_PAPER_CODES/Table3/case4_d5_a1.R")
+```
 
-    -   `SBM.gen`, `DCBM.gen`: Generates SBM and DCBM
+### Table 4: real networks
 
-    -   `best.perm.label.match`: MatchGreedy algorithm for label
-        matching
+```r
+source("NETCROP_PAPER_CODES/Table4_realdata/DBLP_analysis.R")
+source("NETCROP_PAPER_CODES/Table4_realdata/Twitch_analysis.R")
+```
 
-    -   `fast.SBM.est`, `NCV.SBM.est`: Functions to estimate SBM
-        parameters using the full adjacency matrix and the same for NCV
-        [2] that uses rectangular submatrices, respectively.
+### Figures
 
-    -   `fast.DCBM.est`, `NCV.DCBM.est`: Functions to estimate DCBM
-        parameters by profile likelihood using the full adjacency matrix
-        and the same for NCV that uses rectangular submatrices,
-        respectively.
+```r
+source("NETCROP_PAPER_CODES/Figure2/Figure2_partune_rsc.R")
+source("NETCROP_PAPER_CODES/FigureS3/FigureS3_small_networks.R")
+```
 
-    -   `eigen.DCBM.est`, `NCV.eigen.DCBM.est`: Functions to estimate
-        DCBM parameters by spectral method using the full adjacency
-        matrix and the same for NCV that uses rectangular submatrices,
-        respectively, using spectral clustering.
+## Existing results: replace, resume, or archive
 
-    -   `ECV.stability.BM`: Wrapper for ECV [3] for blockmodels (taken
-        from `randnet` package [4]) adding the choice of loss function
-        and stability (repetition).
+Every simulation script has its own directories:
 
-    -   `NCV.stability.BM`: Wrapper for NCV for blockmodels (taken from
-        `randnet` package) adding the choice of loss function and
-        stability (repetition).
+```text
+<table-or-figure>/output/<script-name>/
+<table-or-figure>/logs/<script-name>/
+```
 
--   `RDPG_helpers.R`: Contains the functions
+When an interactive R session finds existing results, it asks whether to:
 
-    -   **`netcrop_rdpg`: Function to perform NETCROP for RDPG.**
+1. **Replace** — delete that script's existing results and restart at
+   simulation 1.
+2. **Resume** — remove duplicate or incomplete trailing rows and continue from
+   the first incomplete simulation. NETCROP, NCV, and ECV resume independently.
+3. **Archive** — rename the script's output and log directories with a timestamp
+   and start new directories.
 
-    -   `RDPG.gen`: Generates RDPG
+Cancelling the menu stops the simulation without guessing.
 
-    -   `ECV.stability.RDPG`: Wrapper for ECV for RDPG (taken from
-        `randnet` package) adding the choice of loss function and
-        stability (repetition).
+### Batch jobs
 
--   `LSM_helpers.R`: Contains the functions
+Batch jobs cannot answer an interactive menu. Set the environment variable
+`NETCROP_OUTPUT_ACTION` to `replace`, `resume`, or `archive`.
 
-    -   **`netcrop_lsm`: Function to perform NETCROP for LSM.**
+If it is not set, batch mode defaults to `replace` and restarts from simulation
+1.
 
-    -   `LSM.gen`: Generates latent space model [5, 6]
+From a shell:
 
-    -   `pgd.LSM`: Function to estimate LSM parameters by projected
-        gradient descent (PGD, [6]) using the full adjacency matrix.
-        Uses Rcpp for speed and is in "LSM_PGD_Cpp.cpp".
+```sh
+NETCROP_OUTPUT_ACTION=resume Rscript -e 'source("NETCROP_PAPER_CODES/Table1/case1_sbmK5.R")'
+```
 
-    -   `ECV.stability.LSM`: Wrapper for ECV for LSM (taken from
-        `randnet` package) adding the choice of loss function and
-        stability (repetition).
+From R before sourcing a script:
 
--   `PARTUNE_RSC_helpers.R`: Contains the functions
+```r
+Sys.setenv(NETCROP_OUTPUT_ACTION = "resume")
+source("NETCROP_PAPER_CODES/Table1/case1_sbmK5.R")
+```
 
-    -   **`netcrop_tune_regsp`: Function to perform NETCROP for
-        selecting the best tuning parameter for regularized spectral
-        clusrtering.**
+To return to interactive menus in the same R session:
 
-    -   `DKest`: Davis-Kahan estimator for the tuning parameter [7].
+```r
+Sys.unsetenv("NETCROP_OUTPUT_ACTION")
+```
 
-## References:
+## NCV and ECV on large networks
 
-[1] Chakrabarty, S., Sengupta, S., and Chen, Y. (2025), "Network
-Cross-Validation and Model Selection via Subsampling". arXiv preprint
-arXiv:2504.06903.
+Before every NCV or ECV loop with `n > 1000`, an interactive session warns that
+the method can consume substantial time and memory. If you decline, the method
+is skipped and the console displays a runnable, clickable RStudio command for
+the relevant `xx_small_network_test.R` script.
 
-[2] Chen, K. and Lei, J. (2018), “Network Cross-Validation for
-Determining the Number of Communities in Network Data,” Journal of the
-American Statistical Association, 113, 241–251.
+For batch jobs, large NCV and ECV runs are skipped unless explicitly enabled:
 
-[3] Li, T., Levina, E., and Zhu, J. (2020), “Network Cross-Validation by
-Edge Sampling,” Biometrika, 107, 257–276.
+```sh
+NETCROP_RUN_LARGE_CV=yes NETCROP_OUTPUT_ACTION=resume \
+Rscript -e 'source("NETCROP_PAPER_CODES/Table1/case1_sbmK5.R")'
+```
 
-[4] Li, T., Levina, E., Zhu, J., and Le, C. M. (2023), “randnet: Random
-Network Model Estimation, Selection and Parameter Tuning,” CRAN, R
-Package Version 0.7, <https://CRAN.R-project.org/package=randnet>.
+Accepted true values are `yes`, `true`, and `1`; accepted false values are
+`no`, `false`, and `0`.
 
-[5] Hoff, P. D., Raftery, A. E., and Handcock, M. S. (2002), “Latent
-Space Approaches to Social Network Analysis,” Journal of the American
-Statistical Association, 97, 1090–1098.
+## Repository structure
 
-[6] Ma, Z., Ma, Z., and Yuan, H. (2020), “Universal Latent Space Model
-Fitting for Large Networks with Edge Covariates,” Journal of Machine
-Learning Research, 21, 1–67.
+```text
+NETCROP2/
+├── .Rprofile
+├── .gitignore
+├── NETCROP.Rproj
+├── README.md
+├── first_time_renv_setup.R
+├── renv.lock
+├── renv/
+│   ├── activate.R
+│   └── settings.json
+└── NETCROP_PAPER_CODES/
+    ├── Table1/
+    │   ├── case1_sbmK5.R
+    │   ├── case2_sbmK20.R
+    │   ├── case3_dcbmK10.R
+    │   ├── case4_dcbmK20.R
+    │   └── xx_small_network_test.R
+    ├── Table2/
+    │   ├── case1_zeta0_75.R
+    │   ├── case2_zeta0_70.R
+    │   ├── case3_zeta0_65.R
+    │   └── xx_small_network_test.R
+    ├── Table3/
+    │   ├── case1_d2_a0.R
+    │   ├── case2_d2_a1.R
+    │   ├── case3_d5_a0.R
+    │   ├── case4_d5_a1.R
+    │   └── xx_small_network_test.R
+    ├── Table4_realdata/
+    │   ├── DBLP/
+    │   ├── Twitch/
+    │   ├── DBLP_analysis.R
+    │   ├── Twitch_analysis.R
+    │   └── xx_small_network_test.R
+    ├── Figure2/
+    │   ├── Figure2_partune_rsc.R
+    │   └── xx_small_network_test.R
+    ├── FigureS3/
+    │   └── FigureS3_small_networks.R
+    └── helpers/
+        ├── General_helpers.R
+        ├── General_helpers.cpp
+        ├── SBM_DCBM_helpers.R
+        ├── RDPG_helpers.R
+        ├── LSM_helpers.R
+        ├── LSM_PGD_Cpp.cpp
+        └── PARTUNE_RSC_helpers.R
+```
 
-[7] Joseph, A. and Yu, B. (2016), “Impact of Regularization on Spectral
-Clustering,” The Annals of Statistics, 44, 1765–1791.
+Generated `output/`, `logs/`, local package libraries, RStudio state, and macOS
+metadata are ignored by Git.
+
+## Main functions
+
+- `netcrop_blockmodel()` — NETCROP for SBM and DCBM.
+- `netcrop_rdpg()` — NETCROP for random dot product graphs.
+- `netcrop_lsm()` — NETCROP for latent space models.
+- `netcrop.tune.regsp()` — NETCROP tuning for regularized spectral clustering.
+- `NCV.stability.BM()` and `ECV.stability.BM()` — block-model comparison
+  procedures.
+- `ECV.stability.RDPG()` — RDPG comparison procedure.
+
+General AUC, outer-addition, universal singular-value thresholding, and
+Procrustes operations are implemented locally in `General_helpers.R` and
+`General_helpers.cpp`. The external packages previously used for those
+operations are not required.
+
+## Troubleshooting
+
+### `source()` says a file does not exist
+
+You are probably not at the repository root. Reopen `NETCROP.Rproj` and run:
+
+```r
+getwd()
+list.files()
+```
+
+### Package restore fails
+
+Check your internet connection, restart R, and run:
+
+```r
+source("first_time_renv_setup.R")
+```
+
+Do not install individual project packages manually unless the restore error
+specifically instructs you to do so.
+
+### C++ compilation fails
+
+Confirm that the platform compiler listed under “Install the prerequisites” is
+installed. Then restart R and rerun `first_time_renv_setup.R`.
+
+### A process runs out of memory
+
+Stop the full script and run its `xx_small_network_test.R` file. For large NCV
+or ECV runs, close other memory-intensive applications and use a machine with
+adequate RAM.
+
+### Check the restored environment
+
+```r
+renv::status()
+```
+
+The project library is intentionally not committed. A fresh clone reconstructs
+it from `renv.lock` by running `source("first_time_renv_setup.R")`.
+
+## Citation
+
+```bibtex
+@misc{chakrabarty2025network,
+  title = {Network Cross-Validation and Model Selection via Subsampling},
+  author = {Chakrabarty, Sayan and Sengupta, Srijan and Chen, Yuguo},
+  year = {2025},
+  eprint = {2504.06903},
+  archivePrefix = {arXiv},
+  primaryClass = {stat.ME},
+  url = {https://arxiv.org/abs/2504.06903}
+}
+```

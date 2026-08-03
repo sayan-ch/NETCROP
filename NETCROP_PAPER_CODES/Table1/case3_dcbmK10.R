@@ -1,22 +1,23 @@
 setwd(file.path(here::here("NETCROP_PAPER_CODES", "Table1")))
 
-if(!dir.exists(c("output")))
-  dir.create("output")
-
-if(!dir.exists("logs"))
-  dir.create("logs")
-
-
 HELPERS_DIR <- file.path(here::here("NETCROP_PAPER_CODES", "helpers"))
 
 source(file.path(HELPERS_DIR, "General_helpers.R"))
 source(file.path(HELPERS_DIR, "SBM_DCBM_helpers.R"))
 
+RUN_NAME <- "case3_dcbmK10"
+run.paths <- netcrop_output_action(file.path("output", RUN_NAME),
+                                   file.path("logs", RUN_NAME))
+OUTPUT_DIR <- run.paths$output_dir
+LOG_DIR <- run.paths$log_dir
+OUTPUT_ACTION <- run.paths$action
+
+################################################################################
 ################################################################################
 
 version <- 1
-ncore <- 40 # set the number of available processors to parallelize
-nsim <- 100
+ncore <- 5L # set the number of available processors to parallelize
+nsim <- 100L
 
 # Case 3 of Table 1:
 # DCBM with n = 10000 nodes and K = 10 communities
@@ -26,13 +27,19 @@ K <- 10
 out.in.ratio <- 0.2
 alpha <- 0.5
 B <- alpha * (diag(1-out.in.ratio, K) + out.in.ratio)
+model <- "DCBM"
 
 PI <- rep(1/K, K)
+
+################################################################################
+################################################################################
+################################################################################
+################################################################################
 
 # NETCROP parameters
 ## Parameter selection
 p.test <- 0.02
-param.out <- netcrop_param(p.test = p.test, n = n, o.range = 0) # choosing lowest o in feasible region
+param.out <- netcrop_param(p.test = p.test, n = n, o.range = 0.4) # choosing lowest o in feasible region
 
 s <- param.out$s
 o <- param.out$o
@@ -40,15 +47,24 @@ R <- c(1, 5)
 max.K <- 20
 loss.use <- c("l2")
 
+nc.file <- file.path(OUTPUT_DIR, paste0("case3_netcrop_v", version, ".csv"))
+ncv.file <- file.path(OUTPUT_DIR, paste0("case3_ncv_v", version, ".csv"))
+ecv.file <- file.path(OUTPUT_DIR, paste0("case3_ecv_v", version, ".csv"))
+small.script <- file.path(here::here("NETCROP_PAPER_CODES", "Table1"),
+                          "xx_small_network_test.R")
+
 ## Run NETCROP
 all.nc <- list()
 count <- 1
-
-
-for(sim in 1:nsim){
+nc.simulations <- netcrop_resume_csv(
+  nc.file, nsim, OUTPUT_ACTION,
+  expected_rows = length(R) * length(s) * length(o),
+  key_columns = c("nsim", "R", "s", "o", "loss_function")
+)
+for(sim in nc.simulations){
   net <- DCBM.gen(n = n, K = K, avg.deg = 80, beta = out.in.ratio,
                   ncore = ncore, seed = 200 + sim)
-  
+
   lambda <- mean(rowSums(net$A))
 
   for(RR in seq_along(R)){
@@ -68,13 +84,13 @@ for(sim in 1:nsim){
         })
 
         gc()
-        cat("Sim ", sim, "::", "Time:", time.nc[3], "::", 
-            paste(out.nc$`Mod.K.hat.each.rep (l2)`,
-                  collapse = ", "), "\n")
+        netcrop_status(sim, nsim, "NETCROP", time.nc[3],
+                       out.nc$`Mod.K.hat.each.rep (l2)`, R.use)
 
-        nc.tab <- data.table::data.table(
+        nc.tab <- tibble::tibble(
           nsim = sim,
-          model = dplyr::if_else(all(psi == 1), "SBM", "DCBM"), n = n, K = K,
+          model = model,
+          n = n, K = K,
           out_in_ratio = out.in.ratio, alpha = alpha, lambda = lambda,
           max_K = max.K, loss_function = loss.use,
           s = s.use, o = o.use, R = R.use,
@@ -90,14 +106,16 @@ for(sim in 1:nsim){
           )
 
         readr::write_csv(
-          nc.tab, file = file.path(paste0("output/case3_netcrop_v", version, ".csv")),
-          append = file.exists(paste0("output/case3_netcrop_v", version, ".csv"))
+          nc.tab, file = nc.file, append = file.exists(nc.file)
         )
 
         all.nc[[count]] <- list(time = time.nc, out = out.nc)
 
         saveRDS(
-          all.nc[[count]], file = file.path(paste0("logs/case3_netcrop_v", version, ".rds"))
+          all.nc[[count]], file = file.path(
+            LOG_DIR,
+            paste0("case3_netcrop_v", version, "_sim", sim, "_R", R.use, ".rds")
+          )
         )
 
         count <- count + 1
@@ -106,11 +124,21 @@ for(sim in 1:nsim){
   }
 }
 
+################################################################################
+################################################################################
+################################################################################
+################################################################################
+
 # ## Run NCV
 all.ncv <- list()
 count <- 1
 R <- c(1, 20)
-for(sim in 1:nsim){
+run.ncv <- netcrop_confirm_large_cv(n, "NCV", small.script)
+ncv.simulations <- netcrop_resume_csv(
+  ncv.file, nsim, OUTPUT_ACTION, expected_rows = length(R),
+  key_columns = c("nsim", "R", "loss_function")
+)
+if (run.ncv) for(sim in ncv.simulations){
   set.seed(100 + sim)
 
   net <- DCBM.gen(n = n, K = K, avg.deg = 80, beta = out.in.ratio,
@@ -130,12 +158,13 @@ for(sim in 1:nsim){
 
     gc()
 
-    cat("Sim ", sim, "::", "Time:", time.ncv[3], "::", 
-        paste(out.ncv$best.l2.each.rep, collapse = ", "), "\n")
+    netcrop_status(sim, nsim, "NCV", time.ncv[3],
+                   out.ncv$best.l2.each.rep, R.use)
 
-    ncv.tab <- data.table::data.table(
+    ncv.tab <- tibble::tibble(
       nsim = sim,
-      model = dplyr::if_else(all(psi == 1), "SBM", "DCBM"), n = n, K = K,
+      model = model,
+      n = n, K = K,
       out_in_ratio = out.in.ratio, alpha = alpha, lambda = lambda,
       max_K = max.K, loss_function = loss.use,
       cv = 3, R = R.use,
@@ -151,27 +180,37 @@ for(sim in 1:nsim){
       )
 
     readr::write_csv(
-      ncv.tab, file = file.path(paste0("output/case3_ncv_v", version, ".csv")),
-      append = file.exists(paste0("output/case3_ncv_v", version, ".csv"))
+      ncv.tab, file = ncv.file, append = file.exists(ncv.file)
     )
 
     all.ncv[[count]] <- list(time = time.ncv, out = out.ncv)
 
     saveRDS(
-      all.ncv[[count]], file = file.path(paste0("logs/case3_ncv_v", version, ".rds"))
+      all.ncv[[count]], file = file.path(
+        LOG_DIR,
+        paste0("case3_ncv_v", version, "_sim", sim, "_R", R.use, ".rds")
+      )
     )
 
     count <- count + 1
   }
 }
 
-
+################################################################################
+################################################################################
+################################################################################
+################################################################################
 
 ## Run ECV
 all.ecv <- list()
 count <- 1
 R <- c(1, 20)
-for(sim in 1:nsim){
+run.ecv <- netcrop_confirm_large_cv(n, "ECV", small.script)
+ecv.simulations <- netcrop_resume_csv(
+  ecv.file, nsim, OUTPUT_ACTION, expected_rows = length(R),
+  key_columns = c("nsim", "R", "loss_function")
+)
+if (run.ecv) for(sim in ecv.simulations){
   net <- DCBM.gen(n = n, K = K, avg.deg = 80, beta = out.in.ratio,
                   ncore = ncore, seed = 200 + sim)
 
@@ -190,12 +229,13 @@ for(sim in 1:nsim){
 
     gc()
 
-    cat("Sim ", sim, "::", "Time:", time.ecv[3], "::", 
-        paste(out.ecv$best.l2.each.rep, collapse = ", "), "\n")
+    netcrop_status(sim, nsim, "ECV", time.ecv[3],
+                   out.ecv$best.l2.each.rep, R.use)
 
-    ecv.tab <- data.table::data.table(
+    ecv.tab <- tibble::tibble(
       nsim = sim,
-      model = dplyr::if_else(all(psi == 1), "SBM", "DCBM"), n = n, K = K,
+      model = model,
+      n = n, K = K,
       out_in_ratio = out.in.ratio, alpha = alpha, lambda = lambda,
       max_K = max.K, loss_function = loss.use,
       cv = 3, R = R.use,
@@ -211,64 +251,70 @@ for(sim in 1:nsim){
       )
 
     readr::write_csv(
-      ecv.tab, file = file.path(paste0("output/case3_ecv_v", version, ".csv")),
-      append = file.exists(paste0("output/case3_ecv_v", version, ".csv"))
+      ecv.tab, file = ecv.file, append = file.exists(ecv.file)
     )
 
     all.ecv[[count]] <- list(time = time.ecv, out = out.ecv)
 
     saveRDS(
-      all.ecv[[count]], file = file.path(paste0("logs/case3_ecv_v", version, ".rds"))
+      all.ecv[[count]], file = file.path(
+        LOG_DIR,
+        paste0("case3_ecv_v", version, "_sim", sim, "_R", R.use, ".rds")
+      )
     )
 
     count <- count + 1
   }
 }
 
-
 ################################################################################
-library(tidyverse)
+################################################################################
+################################################################################
+library(dplyr)
+true_model <- paste0(model, "-", K)
 
-nc.all <- readr::read_csv(file.path(paste0("output/case3_netcrop_v", version, ".csv")))
+nc.all <- readr::read_csv(nc.file, show_col_types = FALSE)
 
-View(nc.all |> dplyr::group_by(s, o, R) |>
+print(nc.all |> dplyr::group_by(s, o, R) |>
        dplyr::summarize(
-         nsim = dplyr::n(),,
+         nsim = dplyr::n(),
          avg.deg = mean(lambda),
          mean.time = mean(run_time),
-         accu = 100 * mean(best_model == "DCBM-10"),
+         accu = 100 * mean(best_model == true_model),
          mad = mean(abs(K_hat - K)),
          mean.Khat = mean(K_hat),
          sb.count = 100*mean(model_hat == "SBM"),
          dc.count = 100*mean(model_hat == "DCBM")
        ))
 
-ncv.all <- readr::read_csv(file.path(paste0("output/case3_ncv_v", version, ".csv")))
-
-ncv.all |> dplyr::group_by(R) |>
+if (file.exists(ncv.file)) {
+  ncv.all <- readr::read_csv(ncv.file, show_col_types = FALSE)
+  print(ncv.all |> dplyr::group_by(R) |>
   dplyr::summarize(
-    nsim = dplyr::n(),,
+    nsim = dplyr::n(),
     avg.deg = mean(lambda),
     mean.time = mean(run_time),
-    accu = 100 * mean(best_model == "DCBM-10"),
+    accu = 100 * mean(best_model == true_model),
     mad = mean(abs(K_hat - K)),
     mean.Khat = mean(K_hat),
     sb.count = 100*mean(model_hat == "SBM"),
     dc.count = 100*mean(model_hat == "DCBM"),
     mad = mean(abs(K_hat - K))
-  )
+  ))
+}
 
 
-ecv.all <- readr::read_csv(file.path(paste0("output/case3_ecv_v", version, ".csv")))
-
-ecv.all |> dplyr::group_by(R) |>
+if (file.exists(ecv.file)) {
+  ecv.all <- readr::read_csv(ecv.file, show_col_types = FALSE)
+  print(ecv.all |> dplyr::group_by(R) |>
   dplyr::summarize(
-    nsim = dplyr::n(),,
+    nsim = dplyr::n(),
     avg.deg = mean(lambda),
     mean.time = mean(run_time),
-    accu = 100 * mean(best_model == "DCBM-10"),
+    accu = 100 * mean(best_model == true_model),
     mad = mean(abs(K_hat - K)),
     mean.Khat = mean(K_hat),
     sb.count = 100*mean(model_hat == "SBM"),
     dc.count = 100*mean(model_hat == "DCBM")
-  )
+  ))
+}

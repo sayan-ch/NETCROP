@@ -1,37 +1,39 @@
 setwd(file.path(here::here("NETCROP_PAPER_CODES", "Figure2")))
 
-if(!dir.exists(c("output")))
-  dir.create("output")
-
-if(!dir.exists("logs"))
-  dir.create("logs")
-
-
 HELPERS_DIR <- file.path(here::here("NETCROP_PAPER_CODES", "helpers"))
 
 source(file.path(HELPERS_DIR, "General_helpers.R"))
 source(file.path(HELPERS_DIR, "PARTUNE_RSC_helpers.R"))
 
+RUN_NAME <- "Figure2_partune_rsc"
+run.paths <- netcrop_output_action(file.path("output", RUN_NAME),
+                                   file.path("logs", RUN_NAME))
+OUTPUT_DIR <- run.paths$output_dir
+LOG_DIR <- run.paths$log_dir
+OUTPUT_ACTION <- run.paths$action
+
 ################################################################################
 
-ncore <- 40
+ncore <- 5L
 nsim <- 100
 
-n <- 10000
+n <- 10000L
 K <- 5
 beta <- 1/3
 rho <- 0.3
 
-list.all <- list()
+results.file <- file.path(OUTPUT_DIR, "list_all.rds")
+resume.state <- netcrop_resume_rds(results.file, nsim, OUTPUT_ACTION)
+list.all <- resume.state$results
 
-for(enum in 1:nsim){
+for(enum in resume.state$simulations){
   net <- DCBM.gen(n = n, K = K, beta = beta, rho = rho,
                   ncore = ncore, seed = 100 + enum)
-  
+
   deg.out <- mean(rowSums(net$A))
-  
+
   final.time<- system.time(
-    final.out <- netcrop.tune.regsp(A = net$A, K = K, 
+    final.out <- netcrop.tune.regsp(A = net$A, K = K,
                                             tau.cand = seq(0, 2, 0.1),
                                             DCBM = T,
                                             s = 3, o = 8002, R = 5,
@@ -41,40 +43,42 @@ for(enum in 1:nsim){
                                             true.g = net$member,
                                             ncore = ncore,
                                             seed = 200 + 10*enum))[3]
-  
+
+  netcrop_status(enum, nsim, "NETCROP", final.time,
+                 final.out$croissant.all.accu["l2"])
+
   dk.time <- system.time(
     dk.out <- DKest(A = net$A, K = 5,
                             true.g = net$member,
                             tau.cand = seq(0, 0.1, 0.01),
                             laplace = T, DCBM = T, DC.est = 2,
                             ncore = ncore))[3]
-  
+
+  netcrop_status(enum, nsim, "Davis-Kahan", dk.time,
+                 dk.out[which.min(dk.out[, "DK.stat"]), "tau.cand"])
+
   list.all[[enum]] <- list(net = net, deg = deg.out,
-                   nc.out = final.out, nc.time = final.time, 
+                   nc.out = final.out, nc.time = final.time,
                    dk.out = dk.out, dk.time = dk.time)
-  
-  saveRDS(list.all[[enum]], file.path(paste0("logs/list_all_", enum, ".rds")))
-  
-  saveRDS(list.all, file = "output/list_all.rds")
+
+  saveRDS(list.all[[enum]], file.path(LOG_DIR, paste0("list_all_", enum, ".rds")))
+
+  saveRDS(list.all, file = results.file)
 }
 
 
 ################################################################################
 ## plotting
-library(data.table) 
-library(tidyverse)
-library(ggpubr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
 library(ggtext)
 library(RColorBrewer)
 
 showtext::showtext_auto()
 
-final.out <- dk.out <- list()
-for(ii in 1:nsim){
-  tmp.out <- readRDS(file.path(paste0("logs/list_all_", ii, ".rds")))
-  final.out[[ii]] <- tmp.out$nc.out
-  dk.out[[ii]] <- tmp.out$dk.out
-}
+final.out <- lapply(list.all, `[[`, "nc.out")
+dk.out <- lapply(list.all, `[[`, "dk.out")
 
 mat.out <- list()
 for(ii in 1:length(final.out)){
@@ -99,8 +103,8 @@ for(ii in 1:length(final.out)){
     final.out[[ii]]$croissant.all.accu["pair.hemming.loss.mean"],
     final.out[[ii]]$croissant.all.accu["pair.hemming.loss.mode"]
   )
-  
-  names(mat.out[[ii]]) <- c("0", "Oracle", 
+
+  names(mat.out[[ii]]) <- c("0", "Oracle",
                             "Davis-Kahan Estimator",
                             "NETCROP(l2)", "NETCROP(l2)-Mean", "NETCROP(l2)-Mode",
                             "NETCROP(bd)", "NETCROP(bd)-Mean", "NETCROP(bd)-Mode",
@@ -108,7 +112,7 @@ for(ii in 1:length(final.out)){
                             "NETCROP(NMI)", "NETCROP(NMI)-Mean", "NETCROP(NMI)-Mode",
                             "NETCROP(Hemming)", "NETCROP(Hemming)-Mean", "NETCROP(Hemming)-Mode"
   )
-  
+
 }
 
 
@@ -117,12 +121,12 @@ mat.all <- do.call(cbind, mat.out)
 mat.median <- apply(mat.all, 1, mean)
 mat.med.sd <- apply(mat.all, 1, sd)
 
-plot.out <- data.table(
+plot.out <- tibble(
   tau = factor(rownames(mat.all),
-               levels = c("0", "Oracle", 
+               levels = c("0", "Oracle",
                           "Davis-Kahan Estimator",
                           "NETCROP(l2)", "NETCROP(l2)-Mean", "NETCROP(l2)-Mode",
-                          "NETCROP(bd)", "NETCROP(bd)-Mean", 
+                          "NETCROP(bd)", "NETCROP(bd)-Mean",
                           "NETCROP(bd)-Mode",
                           "NETCROP(AUC)", "NETCROP(AUC)-Mean", "NETCROP(AUC)-Mode",
                           "NETCROP(NMI)", "NETCROP(NMI)-Mean",
@@ -142,7 +146,7 @@ plot.l2 <- plot.out |> filter(
 ) |>
   mutate(
     tau = factor(tau,
-                 levels = c("0", "Oracle", 
+                 levels = c("0", "Oracle",
                             "Davis-Kahan Estimator",
                             "NETCROP(l2)", "NETCROP(l2)-Mean", "NETCROP(l2)-Mode"
                  )
@@ -150,13 +154,13 @@ plot.l2 <- plot.out |> filter(
 
 plot.l2$group <- factor(
   if_else(
-    plot.l2$tau %in% c("0", "Oracle", "Davis-Kahan Estimator"), 
+    plot.l2$tau %in% c("0", "Oracle", "Davis-Kahan Estimator"),
     "Group 1", "Group 2"
   )
 )
 
 bw.l2 <- plot.l2 |>
-  ggplot(aes(x = accuracy, y = tau, 
+  ggplot(aes(x = accuracy, y = tau,
              # color = group
   )) +  # Map color to the 'group' variable
   geom_point() +
@@ -184,7 +188,7 @@ bw.l2 <- plot.l2 |>
     x = expression("Clustering Accuracy (%) [ Mean \u00b1 SD]"),
     y = expression(tau)
   ) +
-  theme_pubclean() +
+  cowplot::theme_minimal_hgrid() +
   theme(
     axis.title.y = element_text(angle = 0, vjust = 0.5, size = 16, color = "black"),
     axis.text.y = element_text(family = "sans", size = 13,
@@ -192,7 +196,7 @@ bw.l2 <- plot.l2 |>
                                # color = c(
                                #   rep("brown", 3),
                                #   rep("orange", 3),
-                               #   rep("purple", 3),   
+                               #   rep("purple", 3),
                                #   rep("darkgreen", 3),
                                #   rep("darkred", 3),
                                #   rep("darkblue", 3)
@@ -208,13 +212,14 @@ bw.l2 <- plot.l2 |>
     plot.margin = margin(10, 10, 10, 10)  # Adjust plot margin for a better layout
   )
 
-bw.l2
+print(bw.l2)
 
-ggsave("output/l2_bw.pdf", bw.l2, width = 8, height = 4.5, dpi = 600, 
+ggsave(file.path(OUTPUT_DIR, "l2_bw.pdf"), bw.l2,
+       width = 8, height = 4.5, dpi = 600,
        device = "pdf")
 
 color.l2 <- plot.l2 |>
-  ggplot(aes(x = accuracy, y = tau, 
+  ggplot(aes(x = accuracy, y = tau,
              color = group
   )) +  # Map color to the 'group' variable
   geom_point() +
@@ -247,7 +252,7 @@ color.l2 <- plot.l2 |>
     y = expression(tau)
     # y = quote(tau)
   ) +
-  theme_pubclean() +
+  cowplot::theme_minimal_hgrid() +
   theme(
     axis.title.y = element_text(angle = 0, vjust = 0.5, size = 16, color = "black"),
     axis.text.y = element_text(family = "sans", size = 13,
@@ -268,9 +273,8 @@ color.l2 <- plot.l2 |>
     plot.margin = margin(10, 10, 10, 10)  # Adjust plot margin for a better layout
   )
 
-color.l2
+print(color.l2)
 
-ggsave("output/l2_color.pdf", color.l2, width = 8, height = 4.5, dpi = 600, 
+ggsave(file.path(OUTPUT_DIR, "l2_color.pdf"), color.l2,
+       width = 8, height = 4.5, dpi = 600,
        device = "pdf")
-
-

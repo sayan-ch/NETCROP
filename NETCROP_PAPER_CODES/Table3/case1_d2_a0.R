@@ -1,21 +1,21 @@
 setwd(file.path(here::here("NETCROP_PAPER_CODES", "Table3")))
 
-if(!dir.exists(c("output")))
-  dir.create("output")
-
-if(!dir.exists("logs"))
-  dir.create("logs")
-
-
 HELPERS_DIR <- file.path(here::here("NETCROP_PAPER_CODES", "helpers"))
 
 source(file.path(HELPERS_DIR, "General_helpers.R"))
 source(file.path(HELPERS_DIR, "LSM_helpers.R"))
 
+RUN_NAME <- "case1_d2_a0"
+run.paths <- netcrop_output_action(file.path("output", RUN_NAME),
+                                   file.path("logs", RUN_NAME))
+OUTPUT_DIR <- run.paths$output_dir
+LOG_DIR <- run.paths$log_dir
+OUTPUT_ACTION <- run.paths$action
+
 ################################################################################
 
 version <- 1
-ncore <- 40 # set the number of available processors to parallelize
+ncore <- 5L # set the number of available processors to parallelize
 nsim <- 100
 
 # Case 1 of Table 3:
@@ -34,12 +34,17 @@ o <- param.out$o
 R <- c(1, 5)
 max.d <- 5
 loss.use <- c("l2")
+nc.file <- file.path(OUTPUT_DIR, paste0("case1_netcrop_v", version, ".csv"))
 
 ## Run NETCROP
 all.nc <- list()
 count <- 1
-
-for(sim in 1:nsim){
+nc.simulations <- netcrop_resume_csv(
+  nc.file, nsim, OUTPUT_ACTION,
+  expected_rows = length(R) * length(s) * length(o),
+  key_columns = c("nsim", "R", "s", "o", "loss_function")
+)
+for(sim in nc.simulations){
   net <- LSM.gen(n = n, d = d, alpha = alpha, ncore = ncore,
                  seed = 100 + sim)
 
@@ -61,10 +66,10 @@ for(sim in 1:nsim){
         })
 
         gc()
-        cat("Sim ", sim, "::", "Time:", time.nc[3], ":: d_hat : ",
-            paste(out.nc$`d.hat.each.rep (l2)`, collapse = ", "), "\n")
+        netcrop_status(sim, nsim, "NETCROP", time.nc[3],
+                       out.nc$`d.hat.each.rep (l2)`, R.use)
 
-        nc.tab <- data.table::data.table(
+        nc.tab <- tibble::tibble(
           nsim = sim,
           model = "LSM", n = n, d = d,
           alpha = alpha, lambda = lambda,
@@ -77,14 +82,16 @@ for(sim in 1:nsim){
         )
 
         readr::write_csv(
-          nc.tab, file = file.path(paste0("output/case1_netcrop_v", version, ".csv")),
-          append = file.exists(paste0("output/case1_netcrop_v", version, ".csv"))
+          nc.tab, file = nc.file, append = file.exists(nc.file)
         )
 
         all.nc[[count]] <- list(time = time.nc, out = out.nc)
 
         saveRDS(
-          all.nc[[count]], file = file.path(paste0("logs/case1_netcrop_v", version, ".rds"))
+          all.nc[[count]], file = file.path(
+            LOG_DIR,
+            paste0("case1_netcrop_v", version, "_sim", sim, "_R", R.use, ".rds")
+          )
         )
 
         count <- count + 1
@@ -95,16 +102,15 @@ for(sim in 1:nsim){
 
 
 ################################################################################
-nc.all <- readr::read_csv(file.path(paste0("output/case1_netcrop_v", version, ".csv")))
+nc.all <- readr::read_csv(nc.file, show_col_types = FALSE)
 
 
-View(nc.all |> dplyr::group_by(s, o, R) |>
+print(nc.all |> dplyr::group_by(s, o, R) |>
   dplyr::summarize(
-    nsim = dplyr::n(),,
+    nsim = dplyr::n(),
     avg.deg = mean(lambda),
     mean.time = mean(run_time),
     accu = 100 * mean(d_hat == d),
     mean.dhat = mean(d_hat),
     mad = mean(abs(d_hat - d))
   ))
-

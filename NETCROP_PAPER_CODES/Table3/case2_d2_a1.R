@@ -1,22 +1,22 @@
 setwd(file.path(here::here("NETCROP_PAPER_CODES", "Table3")))
 
-if(!dir.exists(c("output")))
-  dir.create("output")
-
-if(!dir.exists("logs"))
-  dir.create("logs")
-
-
 HELPERS_DIR <- file.path(here::here("NETCROP_PAPER_CODES", "helpers"))
 
 source(file.path(HELPERS_DIR, "General_helpers.R"))
 source(file.path(HELPERS_DIR, "LSM_helpers.R"))
 
+RUN_NAME <- "case2_d2_a1"
+run.paths <- netcrop_output_action(file.path("output", RUN_NAME),
+                                   file.path("logs", RUN_NAME))
+OUTPUT_DIR <- run.paths$output_dir
+LOG_DIR <- run.paths$log_dir
+OUTPUT_ACTION <- run.paths$action
+
 ################################################################################
 
 version <- 1
-ncore <- 40 # set the number of available processors to parallelize
-nsim <- 100
+ncore <- 5L # set the number of available processors to parallelize
+nsim <- 100L
 
 # Case 2 of Table 3:
 # LSM with n = 1000, d = 2, alpha = 1
@@ -34,24 +34,29 @@ o <- param.out$o
 R <- c(1, 5)
 max.d <- 5
 loss.use <- c("l2")
+nc.file <- file.path(OUTPUT_DIR, paste0("case2_netcrop_v", version, ".csv"))
 
 ## Run NETCROP
 all.nc <- list()
 count <- 1
-
-for(sim in 1:nsim){
+nc.simulations <- netcrop_resume_csv(
+  nc.file, nsim, OUTPUT_ACTION,
+  expected_rows = length(R) * length(s) * length(o),
+  key_columns = c("nsim", "R", "s", "o", "loss_function")
+)
+for(sim in nc.simulations){
   net <- LSM.gen(n = n, d = d, alpha = alpha, ncore = ncore,
                  seed = 100 + sim)
-  
+
   lambda <- mean(rowSums(net$A))
-  
+
   for(RR in seq_along(R)){
     for(ss in seq_along(s)){
       for(oo in seq_along(o)){
         s.use <- s[ss]
         o.use <- o[oo]
         R.use <- R[RR]
-        
+
         time.nc <- system.time({
           out.nc <- netcrop_lsm(A = net$A, d.cand = max.d,
                                 s = s.use, o = o.use, R = R.use,
@@ -59,12 +64,12 @@ for(sim in 1:nsim){
                                 ncore = ncore, seed = 500 + sim,
                                 step.size = 0.3, niter = 100, trace = 0)
         })
-        
+
         gc()
-        cat("Sim ", sim, "::", "Time:", time.nc[3], ":: d_hat : ",
-            paste(out.nc$`d.hat.each.rep (l2)`, collapse = ", "), "\n")
-        
-        nc.tab <- data.table::data.table(
+        netcrop_status(sim, nsim, "NETCROP", time.nc[3],
+                       out.nc$`d.hat.each.rep (l2)`, R.use)
+
+        nc.tab <- tibble::tibble(
           nsim = sim,
           model = "LSM", n = n, d = d,
           alpha = alpha, lambda = lambda,
@@ -75,34 +80,35 @@ for(sim in 1:nsim){
           user_time = time.nc[1],
           system_time = time.nc[2]
         )
-        
+
         readr::write_csv(
-          nc.tab, file = file.path(paste0("output/case2_netcrop_v", version, ".csv")),
-          append = file.exists(paste0("output/case2_netcrop_v", version, ".csv"))
+          nc.tab, file = nc.file, append = file.exists(nc.file)
         )
-        
+
         all.nc[[count]] <- list(time = time.nc, out = out.nc)
-        
+
         saveRDS(
-          all.nc[[count]], file = file.path(paste0("logs/case2_netcrop_v", version, ".rds"))
+          all.nc[[count]], file = file.path(
+            LOG_DIR,
+            paste0("case2_netcrop_v", version, "_sim", sim, "_R", R.use, ".rds")
+          )
         )
-        
+
         count <- count + 1
       }
     }
   }
 }
 
-nc.all <- readr::read_csv(file.path(paste0("output/case2_netcrop_v", version, ".csv")))
+nc.all <- readr::read_csv(nc.file, show_col_types = FALSE)
 
 
-View(nc.all |> dplyr::group_by(s, o, R) |>
+print(nc.all |> dplyr::group_by(s, o, R) |>
   dplyr::summarize(
-    nsim = dplyr::n(),,
+    nsim = dplyr::n(),
     avg.deg = mean(lambda),
     mean.time = mean(run_time),
     accu = 100 * mean(d_hat == d),
     mean.dhat = mean(d_hat),
     mad = mean(abs(d_hat - d))
   ))
-

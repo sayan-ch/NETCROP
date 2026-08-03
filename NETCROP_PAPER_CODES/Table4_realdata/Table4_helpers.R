@@ -1,19 +1,4 @@
-## list of all packages used
-# library(parallel)
-# library(dplyr)
-# library(RSpectra)
-# library(cluster)
-# library(Rfast)
-# library(data.table::data.table)
-# library(readr)
-# library(irlba)
-# library(softImpute)
-# library(Matrix)
-# library(pROC)
-# library(IMIFA)
-# library(rlist)
-# library(latentnet)
-# library(poweRlaw)
+source(file.path(here::here(), "NETCROP_PAPER_CODES/helpers/General_helpers.R"))
 
 
 
@@ -29,11 +14,10 @@ l2 <- function(x, y) {
 }
 
 bin.dev <- function(x, y) { # y: prob, x: binary response
-  y[y < 1e-5] <- 1e-5
-  y[y > 1 - 1e-5] <- 1 - 1e-5
-  
+  y <- pmax(y, 1e-5)
+  y <- pmin(y, 1 - 1e-5)
   tmp <- -x * log(y) - (1 - x) * log(1 - y)
-  
+
   return(sum(tmp, rm.na = T))
 }
 
@@ -46,82 +30,81 @@ auroc <- function(score, bool) {
 }
 
 AUC <- function(AA, PP) {
-  -Rfast::auc(as(AA, "numeric"), as(PP, "numeric"))
+  -netcrop_auc(group = as(AA, "numeric"), predictions = as(PP, "numeric"))
   #-auroc(as(P, 'vector'), as(A, 'vector'))
 }
 
 ################################################################################
 ##SBM or DCBM generator
-SBM.gen <- function(n, K, B, g = NULL, PI = rep(1 / K, K), 
+SBM.gen <- function(n, K, B, g = NULL, PI = rep(1 / K, K),
                     avg.deg = NULL, ncore = 1, seed = NULL){
   set.seed(seed)
-  
+
   if(is.null(g))
     g <- sample.int(K, n, T, PI)
-  
+
   if(is.null(avg.deg)){
     stor <- do.call('rbind', parallel::mclapply(1:(n - 1), function(i) {
       if(!is.null(seed))
         set.seed(seed + i)
       tmp <- which(rbinom(n - i, 1, B[g[i], g[(i + 1):n]]) == 1)
-      
+
       if (length(tmp) == 0)
         return(NULL)
       else
         return(cbind(rep(i, length(tmp)), i + tmp))
     }, mc.cores = ncore))
-    
+
     A <- sparseMatrix(i = c(stor[, 1], stor[, 2]),
                       j = c(stor[, 2], stor[, 1]),
                       x = 1, dims = c(n, n))
-    
+
     return(list(A = A, g = g, psi = psi))
   }
-  
+
   psi.mat <- sparseMatrix(
     i = 1:n,
     j = g,
     x = 1,
-    dims = c(n, K) 
+    dims = c(n, K)
   )
   P0 <- psi.mat %*% B %*% t(psi.mat)
-  
+
   alpha <-  avg.deg / mean(rowSums(P0))
-  
+
   P <- P0 * alpha
-  
-  P[P > 1 - 1e-6] <- 1 - 1e-6
-  P[P < 1e-6] <- 1e-6
-  
+
+  P <- pmin(P, 1 - 1e-6)
+  P <- pmax(P, 1e-6)
   diag(P) <- 0
-  
+
   stor <- do.call('rbind', mclapply(1:(n - 1), function(i) {
     if(!is.null(seed))
       set.seed(seed + i)
     tmp <- which(rbinom(n - i, 1, P[i, (i + 1):n]) == 1)
-    
+
     if (length(tmp) == 0)
       return(NULL)
     else
       return(cbind(rep(i, length(tmp)), i + tmp))
   }, mc.cores = ncore))
-  
+
   A <- sparseMatrix(i = stor[, 1], j = stor[, 2], x = 1,
                     dims = c(n, n))
   A <- A + t(A)
-  
+
   return(list(A = A, member = g, alpha = alpha))
 }
 
 DCBM.gen <- function(n, K, avg.deg, beta = 0, g = NULL,
                             PI = rep(1 / K, K), ncore = 1, seed = NULL) {
   set.seed(seed)
-  
+
   if(is.null(g))
     g <- sample.int(K, n, T, PI)
-  
+
   psi <- 1 / rbeta(n, 4, 1)
-  
+
   B0 <- diag(1 - beta, nrow = K) + beta
 
   psi.mat <- sparseMatrix(
@@ -136,9 +119,8 @@ DCBM.gen <- function(n, K, avg.deg, beta = 0, g = NULL,
 
   P <- alpha * P0
 
-  P[P > 1 - 1e-6] <- 1 - 1e-6
-  P[P < 1e-6] <- 1e-6
-
+  P <- pmin(P, 1 - 1e-6)
+  P <- pmax(P, 1e-6)
   diag(P) <- 0
 
   stor <- do.call('rbind', mclapply(1:(n - 1), function(i) {
@@ -235,23 +217,23 @@ NCV.SBM.est <- function(A, g, n = nrow(A), K = max(g), fold.nodes) {
     B[K, K] <- sum(A) / (nrow(A) * ncol(A) - nrow(A)^2)
     return(B)
   }
-  
+
   G.row <- lapply(1:K, function(k)
     which(g[-fold.nodes] == k))
   nk.row <- sapply(G.row, 'length')
-  
+
   G.col <- lapply(1:K, function(k)
     which(g == k))
   nk.col <- sapply(G.col, 'length')
-  
+
   for (k in 1:K) {
     for (l in k:K) {
       B[k, l] <- B[l, k] <- sum(A[G.row[[k]], G.col[[l]]]) / (nk.row[k] * nk.col[l])
     }
   }
-  
+
   diag(B) <- diag(B) * nk.col / pmax((nk.col - 1), 1)
-  
+
   return(B)
 }
 
@@ -298,26 +280,26 @@ NCV.DCBM.est <- function(A, g, n = nrow(A), K = max(g),
     B.sum[K, K] <- sum(A) + 0.01
 
     psi <- as.numeric(colSums(A) / B.sum[K, K])
-    
+
     return(list(Bsum = B.sum, psi = psi[fold.nodes]))
   }
-  
+
   G.row <- lapply(1:K, function(k)
     which(g[-fold.nodes] == k))
   nk.row <- sapply(G.row, 'length')
-  
+
   G.col <- lapply(1:K, function(k)
     which(g == k))
   nk.col <- sapply(G.col, 'length')
-  
+
   for (k in 1:K) {
     for (l in k:K) {
       B.sum[k, l] <- B.sum[l, k] <- sum(A[G.row[[k]], G.col[[l]]]) + 0.01
     }
   }
-  
+
   psi <- as.numeric(colSums(A[, fold.nodes]) / (colSums(B.sum)[g[fold.nodes]]))
-  
+
   return(list(Bsum = B.sum, psi = psi))
 }
 
@@ -367,25 +349,25 @@ NCV.eigen.DCBM.est <- function(A, g, rownorm = NULL,
                            fold.nodes) {
   if(is.null(rownorm)){
     U.hat <- irlba::irlba(A, nu = K, nv = K)$v
-    
+
     psi.hat <- rowSums(U.hat^2)^0.5
   }else{
     psi.hat <- rownorm
   }
-  
+
   psi.outer <- psi.hat %*% t(psi.hat)
-  
+
   B.sum <- matrix(0, K, K)
   if (K == 1) {
     B.sum[K, K] <- sum(A) / sum(psi.outer)
-    
+
     return(list(Bsum = B.sum, psi = psi.hat[fold.nodes]))
   }
-  
+
   G.row <- lapply(1:K, function(k)
     which(g[-fold.nodes] == k))
   nk.row <- sapply(G.row, 'length')
-  
+
   G.col <- lapply(1:K, function(k)
     which(g == k))
   nk.col <- sapply(G.col, 'length')
@@ -396,7 +378,7 @@ NCV.eigen.DCBM.est <- function(A, g, rownorm = NULL,
         sum(A[G.row[[k]], G.col[[l]]]) / sum(psi.outer[G.row[[k]], G.col[[l]]])
     }
   }
-  
+
   return(list(Bsum = B.sum, psi = psi.hat[fold.nodes]))
 }
 
@@ -675,9 +657,8 @@ netcrop_blockmodel <- function(A, K.CAND, s, o, R = 1, tau = 0, laplace = F, dc.
     P.DCBM <- B.DCBM[[r]][[k.cand]][g.DCBM[[r]][[k.cand]][[p]], g.DCBM[[r]][[k.cand]][[q]]] *
       tcrossprod(psi.DCBM[[r]][[k.cand]][[p]], psi.DCBM[[r]][[k.cand]][[q]])
 
-    P.DCBM[P.DCBM > 1 - 1e-6] <- 1 - 1e-6
-    P.DCBM[P.DCBM < 1e-6] <- 1e-6
-
+    P.DCBM <- pmin(P.DCBM, 1 - 1e-6)
+    P.DCBM <- pmax(P.DCBM, 1e-6)
     for (mq in seq_along(mod)) {
       if (mod[mq] == "SBM") {
         for (lq in seq_along(loss)) {
@@ -709,18 +690,22 @@ netcrop_blockmodel <- function(A, K.CAND, s, o, R = 1, tau = 0, laplace = F, dc.
     colnames(L[[r]]) <- as.character(K.CAND)
   }
 
-  obj <- data.table::data.table(
+  obj <- tibble::tibble(
     `Repititon` = rep(1:R, each = length(mod)*length(K.CAND)),
     `Candidate_Model` = rep(rep(mod, each = length(K.CAND)), R),
     `Candidate_Value` = rep(K.CAND, length(mod)*R)
   )
 
-  for (lq in seq_along(loss))
+  for (lq in seq_along(loss)) {
+    column <- paste0(loss[lq])
+    obj[[column]] <- NA_real_
     for (r in 1:R) {
-      obj[[paste0(loss[lq])]] <-
+      rows <- obj$Repititon == r
+      obj[[column]][rows] <-
         c(L[[r]][paste0("SBM_", loss[lq]), , drop = T],
           L[[r]][paste0("DCBM_", loss[lq]), , drop = T])
     }
+  }
 
   obj2 <- list()
 
@@ -783,8 +768,8 @@ holdout.evaluation.fast.all <- function(holdout.index, A, max.K, tau = 0,
     predictors <- A.approx[edge.index[holdout.index]]#A.approx[Omega]
 
     trunc.predictors <- predictors
-    trunc.predictors[predictors > (1 - 1e-6)] <- 1 - 1e-6
-    trunc.predictors[predictors < 1e-6] <- 1e-6
+    trunc.predictors <- pmin(trunc.predictors, 1 - 1e-6)
+    trunc.predictors <- pmax(trunc.predictors, 1e-6)
 
     if (k == 1) {
       pb <- (sum(A.new, na.rm = TRUE) + 1) / (sum(!is.na(A.new)) - sum(!is.na(diag(A.new))) +
@@ -840,8 +825,8 @@ holdout.evaluation.fast.all <- function(holdout.index, A, max.K, tau = 0,
     block.sq.err[k] <- sum((P.hat[Omega] - A[Omega])^2)
     P.hat.Omega <- P.hat[Omega]
     A.Omega <- A[Omega]
-    P.hat.Omega[P.hat.Omega < 1e-6] <- 1e-6
-    P.hat.Omega[P.hat.Omega > (1 - 1e-6)] <- 1 - 1e-6
+    P.hat.Omega <- pmax(P.hat.Omega, 1e-6)
+    P.hat.Omega <- pmin(P.hat.Omega, 1 - 1e-6)
     if('bin.dev' %in% loss)
       loglike[k] <- -sum(A.Omega*log(P.hat.Omega)) - sum((1-A.Omega)*log(1-P.hat.Omega))
     if('AUC' %in% loss)
@@ -883,9 +868,8 @@ holdout.evaluation.fast.all <- function(holdout.index, A, max.K, tau = 0,
       dc.block.sq.err[k] <- sum((pb - A[Omega])^2)
       P.hat.Omega <- P.hat[Omega]
       A.Omega <- A[Omega]
-      P.hat.Omega[P.hat.Omega < 1e-6] <- 1e-6
-      P.hat.Omega[P.hat.Omega > (1 - 1e-6)] <- 1 - 1e-6
-
+      P.hat.Omega <- pmax(P.hat.Omega, 1e-6)
+      P.hat.Omega <- pmin(P.hat.Omega, 1 - 1e-6)
       if('bin.dev' %in% loss)
         dc.loglike[k] <- -sum(A.Omega*log(P.hat.Omega)) - sum((1-A.Omega)*log(1-P.hat.Omega))
       if('AUC' %in% loss)
@@ -922,8 +906,8 @@ holdout.evaluation.fast.all <- function(holdout.index, A, max.K, tau = 0,
       dc.block.sq.err[k] <- sum((P.hat[Omega] - A[Omega])^2)
       P.hat.Omega <- P.hat[Omega]
       A.Omega <- A[Omega]
-      P.hat.Omega[P.hat.Omega < 1e-6] <- 1e-6
-      P.hat.Omega[P.hat.Omega > (1 - 1e-6)] <- 1 - 1e-6
+      P.hat.Omega <- pmax(P.hat.Omega, 1e-6)
+      P.hat.Omega <- pmin(P.hat.Omega, 1 - 1e-6)
       if('bin.dev' %in% loss)
         dc.loglike[k] <- -sum(A.Omega*log(P.hat.Omega)) - sum((1-A.Omega)*log(1-P.hat.Omega))
       if('AUC' %in% loss)
@@ -965,8 +949,8 @@ iter.SVD.core.fast.all <- function(A, Kmax, tol = 1e-5, max.iter = 100,
                                                                                       1))
     }
     A.new.thr <- A.new
-    A.new.thr[A.new < 0 + tau] <- 0 + tau
-    A.new.thr[A.new > cap] <- cap
+    A.new.thr <- pmax(A.new.thr, 0 + tau)
+    A.new.thr <- pmin(A.new.thr, cap)
 
     tmp.SVD <- list(u = svd.new$u[, 1:K],
                     v = svd.new$v[, 1:K],
@@ -1087,7 +1071,7 @@ ECV.stability.BM <- function(A, max.K, train.p = 0.9, cv = 3, R = 20,
            tau = tau, dc.est = dc.est,
            loss = loss, ncore = inner.ncore, seed = seed + 100*rr)
   }, mc.cores = outer.ncore)
-  
+
   valid <- sapply(stab.all, function(xx) is.list(xx))
   stab.all <- stab.all[valid]
 
@@ -1166,7 +1150,7 @@ NCV.BM <- function(A, max.K, cv = 3, dc.est = 2,
       if(kk == 1){
         g.sbm <- rep(1, n)
         g.dcbm <- rep(1, n)
-        
+
       }else{
         VV <- train.eig[, 1:kk]
         VV.rownorm <- sqrt(rowSums(VV^2))
@@ -1180,7 +1164,7 @@ NCV.BM <- function(A, max.K, cv = 3, dc.est = 2,
                          nstart=30, iter.max=30)$cluster
       }
 
-      sbm.test.par <- NCV.SBM.est(A = train.mat, g = g.sbm, K = kk, 
+      sbm.test.par <- NCV.SBM.est(A = train.mat, g = g.sbm, K = kk,
                                    fold.nodes = fold.nodes)
 
       if(dc.est > 1){
@@ -1188,7 +1172,7 @@ NCV.BM <- function(A, max.K, cv = 3, dc.est = 2,
                                        K = kk, fold.nodes = fold.nodes)
       }else{
         if(kk > 1)
-          dcbm.test.par <- NCV.eigen.DCBM.est(A = train.mat, g = g.dcbm, 
+          dcbm.test.par <- NCV.eigen.DCBM.est(A = train.mat, g = g.dcbm,
                                         rownorm = VV.rownorm, fold.nodes = fold.nodes)
         if(kk == 1)
           dcbm.test.par <- NCV.eigen.DCBM.est(A = train.mat, g = g.dcbm,
@@ -1199,15 +1183,14 @@ NCV.BM <- function(A, max.K, cv = 3, dc.est = 2,
 
       dcbm.P.hat <- dcbm.test.par$Bsum[g.dcbm[fold.nodes], g.dcbm[fold.nodes]] *
         dcbm.test.par$psi %*% t(dcbm.test.par$psi)
-      
-      dcbm.P.hat[dcbm.P.hat < 1e-6] <- 1e-6
-      dcbm.P.hat[dcbm.P.hat > 1 - 1e-6] <- 1 - 1e-6
 
+      dcbm.P.hat <- pmax(dcbm.P.hat, 1e-6)
+      dcbm.P.hat <- pmin(dcbm.P.hat, 1 - 1e-6)
       if("l2" %in% loss){
         sbm.l2[kk] <- l2(test.mat, sbm.P.hat)
         dcbm.l2[kk] <- l2(test.mat, dcbm.P.hat)
       }
-      
+
       if("bin.dev" %in% loss){
         sbm.bd[kk] <- bin.dev(test.mat, sbm.P.hat)
         dcbm.bd[kk] <- bin.dev(test.mat, dcbm.P.hat)
