@@ -69,7 +69,8 @@ source(file.path(here::here(), "NETCROP_PAPER_CODES/Table1/xx_small_network_test
 source(file.path(here::here(), "NETCROP_PAPER_CODES/Table2/xx_small_network_test.R"))
 source(file.path(here::here(), "NETCROP_PAPER_CODES/Table3/xx_small_network_test.R"))
 source(file.path(here::here(), "NETCROP_PAPER_CODES/Table4_realdata/xx_small_network_test.R"))
-source(file.path(here::here(), "NETCROP_PAPER_CODES/Figure2/xx_small_network_test.R"))
+source(file.path(here::here(), "NETCROP_PAPER_CODES/Figure2/xx_simulated_small_network_test.R"))
+source(file.path(here::here(), "NETCROP_PAPER_CODES/FigureS3/xx_quicker_test.R"))
 ```
 
 Run one command at a time. The Table 4 small script is a synthetic DCBM smoke
@@ -221,12 +222,13 @@ NETCROP2/
     │   ├── Twitch/
     │   ├── DBLP_analysis.R
     │   ├── Twitch_analysis.R
-    │   └── xx_small_network_test.R
+    │   └── xx_simulated_small_network_test.R
     ├── Figure2/
     │   ├── Figure2_partune_rsc.R
     │   └── xx_small_network_test.R
     ├── FigureS3/
     │   └── FigureS3_small_networks.R
+    │   └── xx_quicker_test.R
     └── helpers/
         ├── General_helpers.R
         ├── General_helpers.cpp

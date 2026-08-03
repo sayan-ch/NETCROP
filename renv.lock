@@ -1250,32 +1250,6 @@
       "Maintainer": "Yihui Xie <xie@yihui.name>",
       "Repository": "https://packagemanager.posit.co/cran/latest"
     },
-    "mcprogress": {
-      "Package": "mcprogress",
-      "Version": "0.1.1",
-      "Source": "Repository",
-      "Title": "Progress Bars and Messages for Parallel Processes",
-      "Authors@R": "c(person(given = \"Myles\",family = \"Lewis\", role = c(\"aut\", \"cre\"), email = \"myles.lewis@qmul.ac.uk\", comment = c(ORCID = \"0000-0001-9365-5345\")))",
-      "Description": "Tools for monitoring progress during parallel processing. Lightweight package which acts as a wrapper around mclapply() and adds a progress bar to it in 'RStudio' or 'Linux' environments. Simply replace your original call to mclapply() with pmclapply(). A progress bar can also be displayed during parallelisation via the 'foreach' package. Also included are functions to safely print messages (including error messages) from within parallelised code, which can be useful for debugging parallelised R code.",
-      "BugReports": "https://github.com/myles-lewis/mcprogress/issues",
-      "URL": "https://github.com/myles-lewis/mcprogress",
-      "License": "GPL (>= 3)",
-      "Encoding": "UTF-8",
-      "Imports": [
-        "parallel"
-      ],
-      "Suggests": [
-        "knitr",
-        "rmarkdown",
-        "rstudioapi"
-      ],
-      "RoxygenNote": "7.3.2",
-      "VignetteBuilder": "knitr",
-      "NeedsCompilation": "no",
-      "Author": "Myles Lewis [aut, cre] (<https://orcid.org/0000-0001-9365-5345>)",
-      "Maintainer": "Myles Lewis <myles.lewis@qmul.ac.uk>",
-      "Repository": "https://packagemanager.posit.co/cran/latest"
-    },
     "peakRAM": {
       "Package": "peakRAM",
       "Version": "1.0.2",

@@ -13,8 +13,9 @@ LOG_DIR <- run.paths$log_dir
 OUTPUT_ACTION <- run.paths$action
 
 ################################################################################
-ncore <- 6L
-nsim <- 20L
+detected.cores <- parallel::detectCores()
+ncore <- if (is.na(detected.cores)) 1L else max(1L, floor(detected.cores/2)) # it can be set to anything else
+nsim <- 100L
 
 library(dplyr)
 library(tidyr)

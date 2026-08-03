@@ -12,12 +12,12 @@ LOG_DIR <- run.paths$log_dir
 OUTPUT_ACTION <- run.paths$action
 
 detected.cores <- parallel::detectCores()
-ncore <- if (is.na(detected.cores)) 1L else min(2L, detected.cores)
+ncore <- if (is.na(detected.cores)) 1L else min(2L, detected.cores) # it can be set to anything else
 nsim <- 2L
 n <- 500L
 d <- 3L
 max.d <- 5L
-xi <- 0.75
+xi <- 1
 loss.use <- "l2"
 
 p.test <- 0.1
@@ -35,7 +35,7 @@ nc.simulations <- netcrop_resume_csv(
 )
 for (sim in nc.simulations) {
   net <- RDPG.gen(n = n, d = d, rho = xi, ncore = ncore,
-                  seed = 200 + sim)
+                  seed = 100 + sim)
   for (R.use in R) {
     timing <- system.time({
       result <- netcrop_rdpg(
@@ -82,3 +82,24 @@ for (sim in ecv.simulations) {
 }
 
 message("Small Table 2 test completed. Results: ", normalizePath(OUTPUT_DIR))
+
+################################################################################
+
+nc.all <- readr::read_csv(nc.file, show_col_types = FALSE)
+
+print(nc.all |> dplyr::group_by(s, o, R) |>
+        dplyr::summarize(
+          nsim = dplyr::n(),
+          mean.time = mean(run_time),
+          accu = 100 * mean(d_hat == d)
+        ))
+
+if (file.exists(ecv.file)) {
+  ecv.all <- readr::read_csv(ecv.file, show_col_types = FALSE)
+  print(ecv.all |> dplyr::group_by(R) |>
+          dplyr::summarize(
+            nsim = dplyr::n(),
+            mean.time = mean(run_time),
+            accu = 100 * mean(d_hat == d)
+          ))
+}

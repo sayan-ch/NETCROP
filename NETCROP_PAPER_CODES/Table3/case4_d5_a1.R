@@ -15,7 +15,8 @@ OUTPUT_ACTION <- run.paths$action
 ################################################################################
 
 version <- 1
-ncore <- 5L # set the number of available processors to parallelize
+detected.cores <- parallel::detectCores()
+ncore <- if (is.na(detected.cores)) 1L else max(1L, floor(detected.cores/2)) # it can be set to anything else
 nsim <- 100L
 
 # Case 4 of Table 3:

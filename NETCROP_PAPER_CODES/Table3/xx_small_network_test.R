@@ -56,3 +56,14 @@ for (sim in nc.simulations) {
 }
 
 message("Small Table 3 test completed. Results: ", normalizePath(OUTPUT_DIR))
+
+################################################################################
+nc.all <- readr::read_csv(nc.file, show_col_types = FALSE)
+
+
+print(nc.all |> dplyr::group_by(s, o, R) |>
+        dplyr::summarize(
+          nsim = dplyr::n(),
+          mean.time = mean(run_time),
+          accu = 100 * mean(d_hat == d)
+        ))

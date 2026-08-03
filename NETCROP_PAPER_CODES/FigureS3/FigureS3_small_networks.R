@@ -14,7 +14,8 @@ OUTPUT_ACTION <- run.paths$action
 
 ################################################################################
 
-ncore <- 5L # set the number of available processors to parallelize the simulations
+detected.cores <- parallel::detectCores()
+ncore <- if (is.na(detected.cores)) 1L else max(1L, floor(detected.cores/2)) # it can be set to anything else
 nsim <- 100L
 
 n.all <- 100*(2:5)
@@ -34,7 +35,7 @@ big.loop <- as.data.frame(expand.grid(nn = n.all, KK = K.all, bbb = beta.all,
                                       pipi = pi.all, ee = edge.density.all, mod = mod.all))
 
 output.file <- file.path(OUTPUT_DIR, "FigureS3_small_networks.csv")
-loopers <- nrow(big.loop):1L
+loopers <- 1L:nrow(big.loop)
 if (identical(OUTPUT_ACTION, "resume") && file.exists(output.file)) {
   existing <- readr::read_csv(output.file, show_col_types = FALSE)
   keys <- c("looper", "nsim", "algorithm", "R", "p_test", "o_range")
@@ -69,7 +70,7 @@ for(looper in loopers){
 
   cat("\n--------------------------------------------")
   cat("\n---", paste(looper, nn, KK, bbb, pipi, ee, mod, sep = ":"), "Started---\n")
-  all.out <- mcprogress::pmclapply(1:nsim, function(ii){
+  all.out <- parallel::mclapply(1:nsim, function(ii){
     cat("--", ii, ": gen --\n")
     # on.exit(gc())
     t0 <- proc.time()

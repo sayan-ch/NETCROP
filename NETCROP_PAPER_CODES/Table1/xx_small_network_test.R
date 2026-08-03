@@ -12,7 +12,7 @@ LOG_DIR <- run.paths$log_dir
 OUTPUT_ACTION <- run.paths$action
 
 detected.cores <- parallel::detectCores()
-ncore <- if (is.na(detected.cores)) 1L else min(2L, detected.cores)
+ncore <- if (is.na(detected.cores)) 1L else min(2L, detected.cores) # it can be set to anything else
 nsim <- 2L
 n <- 500L
 K <- 3L
@@ -21,6 +21,7 @@ out.in.ratio <- 0.3
 alpha <- 0.1
 B <- alpha * (diag(1 - out.in.ratio, K) + out.in.ratio)
 loss.use <- "l2"
+model <- "SBM"
 
 p.test <- 0.1
 param.out <- netcrop_param(p.test = p.test, n = n, o.range = 0)
@@ -43,7 +44,8 @@ for (sim in nc.simulations) {
       result <- netcrop_blockmodel(
         A = net$A, K.CAND = seq_len(max.K), s = s, o = o, R = R.use,
         tau = 0, laplace = FALSE, dc.est = 2, loss = loss.use,
-        mod.cand = c("SBM", "DCBM"), ncore = ncore, seed = 2 + sim * 100
+        mod.cand = c("SBM", "DCBM"), ncore = ncore, seed = 2 + sim * 100,
+        rngR = TRUE # recommended for small networks for better clara agreements
       )
     })
     estimate <- result$`Mod.K.hat.each.rep (l2)`
@@ -70,8 +72,7 @@ for (sim in ncv.simulations) {
       result <- NCV.stability.BM(
         A = net$A, max.K = max.K, cv = 3, R = R.use, tau = 0,
         laplace = FALSE, dc.est = 2, loss = loss.use,
-        ncore = ncore, seed = 2 + sim * 100,
-        rngR = TRUE # recommended for small networks for better clara agreements
+        ncore = ncore, seed = 2 + sim * 100
       )
     })
     netcrop_status(sim, nsim, "NCV", timing[3],
@@ -111,3 +112,43 @@ for (sim in ecv.simulations) {
 }
 
 message("Small Table 1 test completed. Results: ", normalizePath(OUTPUT_DIR))
+
+################################################################################
+################################################################################
+## Summarizing all the results
+library(dplyr)
+
+true_model <- paste0(model, "-", K)
+
+nc.all <- readr::read_csv(nc.file, show_col_types = FALSE)
+
+print(nc.all |> dplyr::group_by(s, o, R) |>
+        dplyr::summarize(
+          method = "NETCROP",
+          nsim = dplyr::n(),
+          mean.time = mean(run_time),
+          accu = 100 * mean(best_model == true_model)
+        ))
+
+if (file.exists(ncv.file)) {
+  ncv.all <- readr::read_csv(ncv.file, show_col_types = FALSE)
+  print(ncv.all |> dplyr::group_by(R) |>
+          dplyr::summarize(
+            method = "NCV",
+            nsim = dplyr::n(),
+            mean.time = mean(run_time),
+            accu = 100 * mean(best_model == true_model)
+          ))
+}
+
+
+if (file.exists(ecv.file)) {
+  ecv.all <- readr::read_csv(ecv.file, show_col_types = FALSE)
+  print(ecv.all |> dplyr::group_by(R) |>
+          dplyr::summarize(
+            method = "ECV",
+            nsim = dplyr::n(),
+            mean.time = mean(run_time),
+            accu = 100 * mean(best_model == true_model)
+          ))
+}
