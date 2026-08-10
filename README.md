@@ -8,7 +8,7 @@ This repository contains the code used for the paper:
 
 ## Start here
 
-### 1. Install the prerequisites
+### 1. Install the prerequisites and clone the repo
 
 Install:
 
@@ -18,6 +18,14 @@ Install:
   - macOS: Xcode Command Line Tools (`xcode-select --install` in Terminal)
   - Windows: the Rtools version matching your R installation
   - Linux: `build-essential`, or the equivalent compiler toolchain
+  
+Clone:
+
+- Open a terminal in a target directory and run the following:
+
+```bash
+git clone https://github.com/sayan-ch/NETCROP.git
+```
 
 ### 2. Open the project correctly
 
