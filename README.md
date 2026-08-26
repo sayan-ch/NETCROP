@@ -76,8 +76,8 @@ The small tests use `n = 500`, `K` or `d = 3`, a maximum candidate value of 5,
 source(file.path(here::here(), "NETCROP_PAPER_CODES/Table1/xx_small_network_test.R"))
 source(file.path(here::here(), "NETCROP_PAPER_CODES/Table2/xx_small_network_test.R"))
 source(file.path(here::here(), "NETCROP_PAPER_CODES/Table3/xx_small_network_test.R"))
-source(file.path(here::here(), "NETCROP_PAPER_CODES/Table4_realdata/xx_small_network_test.R"))
-source(file.path(here::here(), "NETCROP_PAPER_CODES/Figure2/xx_simulated_small_network_test.R"))
+source(file.path(here::here(), "NETCROP_PAPER_CODES/Table4_realdata/xx_simulated_small_network_test.R"))
+source(file.path(here::here(), "NETCROP_PAPER_CODES/Figure2/xx_small_network_test.R"))
 source(file.path(here::here(), "NETCROP_PAPER_CODES/FigureS3/xx_quicker_test.R"))
 ```
 
