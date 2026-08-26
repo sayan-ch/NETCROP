@@ -47,7 +47,7 @@ RStudio and open `NETCROP.Rproj` directly.
 Run exactly this command in the R console:
 
 ```r
-source(file.path(here::here(), "first_time_renv_setup.R"))
+source("first_time_renv_setup.R")
 ```
 
 The setup script:
@@ -127,7 +127,7 @@ source(file.path(here::here(), "NETCROP_PAPER_CODES/Table4_realdata/Twitch_analy
 
 ```r
 source(file.path(here::here(), "NETCROP_PAPER_CODES/Figure2/Figure2_partune_rsc.R"))
-source(file.path(here::here(), "NETCROP_PAPER_CODES/FigureS3/FigureS3_small_networks.R")
+source(file.path(here::here(), "NETCROP_PAPER_CODES/FigureS3/FigureS3_small_networks.R"))
 ```
 
 ## Existing results: replace, resume, or archive
@@ -168,7 +168,7 @@ From R before sourcing a script:
 
 ```r
 Sys.setenv(NETCROP_OUTPUT_ACTION = "resume")
-source(file.path(here::here(), "NETCROP_PAPER_CODES/Table1/case1_sbmK5.R")
+source(file.path(here::here(), "NETCROP_PAPER_CODES/Table1/case1_sbmK5.R"))
 ```
 
 To return to interactive menus in the same R session:
@@ -197,7 +197,7 @@ Accepted true values are `yes`, `true`, and `1`; accepted false values are
 ## Repository structure
 
 ```text
-NETCROP2/
+NETCROP/
 ├── .Rprofile
 ├── .gitignore
 ├── NETCROP.Rproj
