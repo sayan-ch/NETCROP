@@ -1,0 +1,21 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# Generated simulation artifacts
+**/output/
+**/logs/
+
+# Local package and renv state
+library/
+local/
+cellar/
+lock/
+python/
+sandbox/
+staging/
+
+# Operating-system and rendered-document artifacts
+.DS_Store
+README.html
