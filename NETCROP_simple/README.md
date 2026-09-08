@@ -218,3 +218,41 @@ Each simulation prints its bound result rows immediately before returning. Final
 - **Out of memory:** run a quick test first, use one core, close other large applications, and avoid retaining large intermediates.
 - **Slow NCV/ECV:** these competing methods are expected to be much slower on large networks. Validate the quick cases before starting a full experiment.
 - **Failed simulation records:** inspect the `error` field in the RDS-derived CSV, fix the underlying problem, and rerun with the resume action.
+
+## Directory tree
+
+```text
+NETCROP_simple/
+├── .gitignore
+├── README.md
+└── NETCROP_PAPER_CODES/
+    ├── Table1/
+    │   ├── case1_sbmK5.R
+    │   ├── case2_sbmK20.R
+    │   ├── case3_dcbmK10.R
+    │   ├── case4_dcbmK20.R
+    │   └── xx_small_network_test.R
+    ├── Table2/
+    │   ├── case1_zeta0_75.R
+    │   ├── case2_zeta0_70.R
+    │   ├── case3_zeta0_65.R
+    │   └── xx_small_network_test.R
+    ├── Table3/
+    │   ├── case1_d2_a0.R
+    │   ├── case2_d2_a1.R
+    │   ├── case3_d5_a0.R
+    │   ├── case4_d5_a1.R
+    │   └── xx_small_network_test.R
+    ├── Table4_realdata/
+    │   ├── DBLP/
+    │   ├── Twitch/
+    │   ├── DBLP_analysis.R
+    │   ├── Twitch_analysis.R
+    │   └── xx_simulated_small_network_test.R
+    ├── Figure2/
+    │   ├── Figure2_partune_rsc.R
+    │   └── xx_small_network_test.R
+    └── FigureS3/
+        ├── FigureS3_small_networks.R
+        └── xx_quicker_test.R
+```

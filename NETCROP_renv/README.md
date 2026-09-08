@@ -150,49 +150,12 @@ When an interactive R session finds existing results, it asks whether to:
 
 Cancelling the menu stops the simulation without guessing.
 
-### Batch jobs
-
-Batch jobs cannot answer an interactive menu. Set the environment variable
-`NETCROP_OUTPUT_ACTION` to `replace`, `resume`, or `archive`.
-
-If it is not set, batch mode defaults to `replace` and restarts from simulation
-1.
-
-From a shell:
-
-```sh
-NETCROP_OUTPUT_ACTION=resume Rscript -e 'source(file.path(here::here(), "NETCROP_PAPER_CODES/Table1/case1_sbmK5.R")'
-```
-
-From R before sourcing a script:
-
-```r
-Sys.setenv(NETCROP_OUTPUT_ACTION = "resume")
-source(file.path(here::here(), "NETCROP_PAPER_CODES/Table1/case1_sbmK5.R"))
-```
-
-To return to interactive menus in the same R session:
-
-```r
-Sys.unsetenv("NETCROP_OUTPUT_ACTION")
-```
-
 ## NCV and ECV on large networks
 
 Before every NCV or ECV loop with `n > 1000`, an interactive session warns that
 the method can consume substantial time and memory. If you decline, the method
 is skipped and the console displays a runnable, clickable RStudio command for
 the relevant `xx_small_network_test.R` script.
-
-For batch jobs, large NCV and ECV runs are skipped unless explicitly enabled:
-
-```sh
-NETCROP_RUN_LARGE_CV=yes NETCROP_OUTPUT_ACTION=resume \
-Rscript -e 'source(file.path(here::here(), "NETCROP_PAPER_CODES/Table1/case1_sbmK5.R")'
-```
-
-Accepted true values are `yes`, `true`, and `1`; accepted false values are
-`no`, `false`, and `0`.
 
 ## Repository structure
 

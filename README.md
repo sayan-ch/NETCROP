@@ -62,3 +62,35 @@ git sparse-checkout set NETCROP_simple NETCROP_renv
 Run the quick tests first. Full experiments include networks with 10,000 nodes, repeated model fits, and competing cross-validation procedures; they can require substantial memory and hours of computation.
 
 The supplementary small-network benchmark is named **Figure S3** throughout the new simple version's code and filenames. The frozen renv snapshot is preserved byte-for-byte, including any historical output-name spelling.
+
+## Directory tree
+
+```text
+NETCROP/
+├── .gitignore
+├── README.md
+├── NETCROP_renv/
+│   ├── README.md
+│   ├── NETCROP.Rproj
+│   ├── first_time_renv_setup.R
+│   ├── renv.lock
+│   ├── renv/
+│   └── NETCROP_PAPER_CODES/
+│       ├── Table1/
+│       ├── Table2/
+│       ├── Table3/
+│       ├── Table4_realdata/
+│       ├── Figure2/
+│       ├── FigureS3/
+│       └── helpers/
+└── NETCROP_simple/
+    ├── .gitignore
+    ├── README.md
+    └── NETCROP_PAPER_CODES/
+        ├── Table1/
+        ├── Table2/
+        ├── Table3/
+        ├── Table4_realdata/
+        ├── Figure2/
+        └── FigureS3/
+```
