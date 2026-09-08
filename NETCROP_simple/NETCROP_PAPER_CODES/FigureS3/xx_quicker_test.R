@@ -81,7 +81,9 @@ run_configuration <- function(n, model, configuration) {
         ram_MiB = if (attempt$ok) memory else -1, error = if (attempt$ok) NA_character_ else attempt$error)
       if (attempt$ok) fits[[label]] <- attempt$fit
     }
-    list(data = do.call(rbind, rows), fits = fits)
+    data <- do.call(rbind, rows)
+    print(data, row.names = FALSE)
+    list(data = data, fits = fits)
   }
   file <- file.path(output_dir, sprintf("FigureS3_config%02d_%s_n%d.rds", configuration, model, n))
   run_simulations(one_simulation, nsim = nsim, use_parallel_simulations = TRUE,
@@ -107,6 +109,18 @@ names(summary_n)[5L] <- "nsim"
 summary_table <- merge(summary_mean, summary_n, by = c("model", "n", "algorithm", "nrep"))
 summary_table$accuracy_percent <- 100 * summary_table$correct
 utils::write.csv(summary_table, file.path(output_dir, "FigureS3_summary.csv"), row.names = FALSE)
+
+valid$selected_K <- as.integer(sub(".*-", "", valid$best_model))
+selection_groups <- split(valid, interaction(valid$model, valid$algorithm, valid$nrep, drop=TRUE))
+selection_summary <- do.call(rbind, lapply(selection_groups, function(x) {
+  counts <- sort(table(x$best_model), decreasing=TRUE)
+  data.frame(model=x$model[1L], algorithm=x$algorithm[1L], R=x$nrep[1L],
+    best_model=names(counts)[1L], selected_count=as.integer(counts[1L]),
+    selected_percent=100*as.integer(counts[1L])/nrow(x),
+    accuracy=100*mean(x$selected_K==x$K), MAD=mean(abs(x$selected_K-x$K)))
+}))
+cat("\nFinal Figure S3 selection summary:\n")
+print(selection_summary, row.names=FALSE)
 
 png(file.path(output_dir, "FigureS3_small_plot.png"), width = 2400, height = 1500, res = 300)
 old <- par(mfrow = c(2, 3), mar = c(4, 4, 2, 1))

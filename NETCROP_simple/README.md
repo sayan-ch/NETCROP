@@ -205,6 +205,10 @@ Most scripts use one outer simulation loop and allow netOP methods to use a conf
 
 Every script prints the current simulation, method, repetition count, selected model/dimension/regularizer, elapsed time, and recorded errors. Since the scripts are unseeded, repeated runs can legitimately make different selections.
 
+For the full Table 1, Table 2, and DBLP workflows, all NETCROP simulations run, save, and summarize first. The scripts then warn that NCV/ECV can be slow, memory intensive, and capable of crashing a personal R session. An interactive R session asks for confirmation; `Rscript` prints the warning and proceeds automatically. Quick tests print the same warning and proceed without prompting.
+
+Each simulation prints its bound result rows immediately before returning. Final simulated-data summaries are grouped by true model, algorithm, and repetition count (`R`) and report the modal `best_model`, its frequency, accuracy, and mean absolute deviation of the selected K or dimension from the truth. Real-data summaries select models only with SSE and report the frequency of each selected model together with test AUC computed as `1 - auc_as_loss` for that SSE-selected model.
+
 ## Troubleshooting
 
 - **Wrong netOP version:** restart R after installing, run `find.package("netOP")`, and confirm `packageVersion("netOP") == "0.1.1"`.

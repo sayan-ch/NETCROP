@@ -51,16 +51,16 @@ one_simulation <- function(simulation) {
               netcrop_fit$overall_best$tau_hat[[1L]], dk_fit$tau_hat))
   print(netcrop_fit$overall_best, row.names = FALSE)
   print(dk_fit$overall_best, row.names = FALSE)
-  list(
-    summary = data.frame(
+  rows <- list(data.frame(
       simulation = simulation,
       netcrop_tau = netcrop_fit$overall_best$tau_hat[[1L]],
       dkest_tau = dk_fit$tau_hat,
       netcrop_seconds = netcrop_fit$timing[["total"]],
       dkest_seconds = dk_fit$timing[["total"]]
-    ),
-    netcrop = netcrop_fit, dkest = dk_fit
-  )
+    ))
+  summary <- do.call(rbind, rows)
+  print(summary, row.names = FALSE)
+  list(summary = summary, netcrop = netcrop_fit, dkest = dk_fit)
 }
 
 records <- run_simulations(

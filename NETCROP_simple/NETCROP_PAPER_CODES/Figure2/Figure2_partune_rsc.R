@@ -65,16 +65,17 @@ one_simulation <- function(simulation) {
   ))
   print(netcrop_fit$overall_best, row.names = FALSE)
   print(dk_fit$overall_best, row.names = FALSE)
-  list(
-    A = A, truth = truth, netcrop = netcrop_fit, dkest = dk_fit,
-    summary = data.frame(
+  rows <- list(data.frame(
       simulation = simulation, n = n, K = K,
       average_degree = average_degree,
       netcrop_tau = netcrop_fit$overall_best$tau_hat[[1L]],
       dkest_tau = dk_fit$tau_hat,
       netcrop_seconds = netcrop_seconds, dkest_seconds = dk_seconds
-    )
-  )
+    ))
+  summary <- do.call(rbind, rows)
+  print(summary, row.names = FALSE)
+  list(A = A, truth = truth, netcrop = netcrop_fit, dkest = dk_fit,
+       summary = summary)
 }
 
 records <- run_simulations(

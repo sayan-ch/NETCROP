@@ -16,31 +16,32 @@ nsim <- 100L; n <- 10000L; d <- 10L; xi <- 0.65; d_candidates <- 1:20; losses <-
 partition <- netOP::netcrop_param_select(test_prop=0.02, n=n, o_range=0)
 num_subnetworks <- partition$num_subnetworks[[1L]]; overlap_size <- partition$overlap_size[[1L]]
 
+phase <- "NETCROP"
 one_simulation <- function(simulation) {
   A <- netOP::generate_rdpg(n=n, d=d, sparsity_multiplier=xi, ncores=ncores)
   lambda <- mean(Matrix::rowSums(A)); rows <- list(); fits <- list(); k <- 1L
-  for (nrep in c(1L, 5L)) {
+  if(phase=="NETCROP") for (nrep in c(1L, 5L)) {
     timing <- system.time(fit <- netOP::netcrop_rdpg(A, d_candidates, num_subnetworks, overlap_size, nrep, losses, ncores=ncores, verbose=FALSE))
     selected <- fit$overall_best$d_hat[fit$overall_best$loss == losses]
     message(sprintf("Simulation %d/%d | NETCROP R=%d | per-repetition d_hat=%s | elapsed=%.3f s", simulation, nsim, nrep, paste(fit$best_dimension_cv$d_hat, collapse=","), timing[["elapsed"]]))
+    print(fit$overall_best,row.names=FALSE)
     rows[[k]] <- data.frame(simulation, algorithm="NETCROP", model="RDPG", n, d, xi, lambda, max_d=max(d_candidates), loss_function=losses,
-      s=num_subnetworks, o=overlap_size, cv=NA_integer_, R=nrep, d_hat=selected, run_time=timing[["elapsed"]], user_time=timing[["user.self"]], system_time=timing[["sys.self"]])
+      s=num_subnetworks, o=overlap_size, cv=NA_integer_, R=nrep, d_hat=selected, best_model=paste0("RDPG-",selected), run_time=timing[["elapsed"]], user_time=timing[["user.self"]], system_time=timing[["sys.self"]])
     fits[[paste0("netcrop_R", nrep)]] <- fit; k <- k+1L
   }
-  for (nrep in c(1L, 20L)) {
+  if(phase=="comparison") for (nrep in c(1L, 20L)) {
     timing <- system.time(fit <- netOP::ecv_stability_rdpg(A, max(d_candidates), 3L, nrep, 0.9, losses, ncores=ncores, verbose=FALSE))
     selected <- fit$overall_best$d_hat[fit$overall_best$loss == losses]
     message(sprintf("Simulation %d/%d | ECV R=%d | per-repetition d_hat=%s | elapsed=%.3f s", simulation, nsim, nrep, paste(fit$best_dimension_cv$d_hat, collapse=","), timing[["elapsed"]]))
+    print(fit$overall_best,row.names=FALSE)
     rows[[k]] <- data.frame(simulation, algorithm="ECV", model="RDPG", n, d, xi, lambda, max_d=max(d_candidates), loss_function=losses,
-      s=NA_integer_, o=NA_integer_, cv=3L, R=nrep, d_hat=selected, run_time=timing[["elapsed"]], user_time=timing[["user.self"]], system_time=timing[["sys.self"]])
+      s=NA_integer_, o=NA_integer_, cv=3L, R=nrep, d_hat=selected, best_model=paste0("RDPG-",selected), run_time=timing[["elapsed"]], user_time=timing[["user.self"]], system_time=timing[["sys.self"]])
     fits[[paste0("ecv_R", nrep)]] <- fit; k <- k+1L
   }
-  list(summary=do.call(rbind, rows), fits=fits)
+  summary<-do.call(rbind,rows);print(summary,row.names=FALSE);list(summary=summary,fits=fits)
 }
-records <- netOP::run_simulations(one_simulation, nsim=nsim, results_file=results_file, action="resume", show_progress=TRUE, continue_on_error=TRUE)
+summarize_results<-function(results){groups<-split(results,interaction(results$model,results$algorithm,results$R,drop=TRUE));out<-do.call(rbind,lapply(groups,function(x){counts<-sort(table(x$best_model),decreasing=TRUE);data.frame(model=x$model[1L],algorithm=x$algorithm[1L],R=x$R[1L],best_model=names(counts)[1L],selected_count=as.integer(counts[1L]),selected_percent=100*as.integer(counts[1L])/nrow(x),accuracy=100*mean(x$d_hat==x$d),MAD=mean(abs(x$d_hat-x$d)))}));print(out,row.names=FALSE);invisible(out)}
+records <- netOP::run_simulations(one_simulation, nsim=nsim, results_file=sub("\\.rds$","_netcrop.rds",results_file), action="resume", show_progress=TRUE, continue_on_error=TRUE)
 successful <- Filter(function(x) isTRUE(x$success), records)
-if (length(successful)) {
-  results <- do.call(rbind, lapply(successful, function(x) x$result$summary)); write.csv(results, csv_file, row.names=FALSE)
-  print(aggregate(cbind(lambda, run_time, correct=as.numeric(d_hat==d), absolute_error=abs(d_hat-d), d_hat) ~ algorithm+R, results, function(x) mean(x, na.rm=TRUE)))
-}
+tables<-lapply(successful,function(x)x$result$summary);if(length(tables)){cat("\nNETCROP summary:\n");summarize_results(do.call(rbind,tables))};message("\nWARNING: ECV is very slow and memory consuming on this network and may crash R on a personal computer.");proceed<-TRUE;if(interactive())proceed<-tolower(trimws(readline("Proceed with ECV? [y/N]: "))) %in% c("y","yes");if(proceed){phase<-"comparison";comparison<-netOP::run_simulations(one_simulation,nsim=nsim,results_file=sub("\\.rds$","_comparison.rds",results_file),action="resume",show_progress=TRUE,continue_on_error=TRUE);tables<-c(tables,lapply(Filter(function(x)isTRUE(x$success),comparison),function(x)x$result$summary))}else message("ECV was skipped; NETCROP results remain saved.");if(length(tables)){results<-do.call(rbind,tables);write.csv(results,csv_file,row.names=FALSE);cat("\nFinal RDPG summary:\n");summarize_results(results)}
 failed <- Filter(function(x) identical(x$success, FALSE), records); if (length(failed)) warning(length(failed), " simulation(s) failed; inspect ", results_file)

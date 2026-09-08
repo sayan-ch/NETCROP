@@ -18,12 +18,13 @@ one_simulation <- function(simulation) {
     timing <- system.time(fit <- netOP::netcrop_lsm(A,d_candidates,num_subnetworks,overlap_size,nrep,losses,lsm_options=list(step_size=0.3,niter=100L,trace=FALSE),ncores=ncores,verbose=FALSE))
     selected <- fit$overall_best$d_hat[fit$overall_best$loss==losses]
     message(sprintf("Simulation %d/%d | NETCROP R=%d | per-repetition d_hat=%s | elapsed=%.3f s",simulation,nsim,nrep,paste(fit$best_dimension_cv$d_hat,collapse=","),timing[["elapsed"]]))
-    rows[[i]] <- data.frame(simulation,model="LSM",n,d,alpha,lambda,max_d=max(d_candidates),loss_function=losses,s=num_subnetworks,o=overlap_size,R=nrep,d_hat=selected,run_time=timing[["elapsed"]],user_time=timing[["user.self"]],system_time=timing[["sys.self"]])
+    print(fit$overall_best,row.names=FALSE)
+    rows[[i]] <- data.frame(simulation,model="LSM",algorithm="NETCROP",n,d,alpha,lambda,max_d=max(d_candidates),loss_function=losses,s=num_subnetworks,o=overlap_size,R=nrep,d_hat=selected,best_model=paste0("LSM-",selected),run_time=timing[["elapsed"]],user_time=timing[["user.self"]],system_time=timing[["sys.self"]])
     fits[[paste0("netcrop_R",nrep)]] <- fit
   }
-  list(summary=do.call(rbind,rows),fits=fits)
+  summary<-do.call(rbind,rows);print(summary,row.names=FALSE);list(summary=summary,fits=fits)
 }
 records <- netOP::run_simulations(one_simulation,nsim=nsim,results_file=results_file,action="resume",show_progress=TRUE,continue_on_error=TRUE)
 successful <- Filter(function(x)isTRUE(x$success),records)
-if(length(successful)){results <- do.call(rbind,lapply(successful,function(x)x$result$summary));write.csv(results,csv_file,row.names=FALSE);print(aggregate(cbind(lambda,run_time,correct=as.numeric(d_hat==d),d_hat,absolute_error=abs(d_hat-d))~s+o+R,results,function(x)mean(x,na.rm=TRUE)))}
+if(length(successful)){results<-do.call(rbind,lapply(successful,function(x)x$result$summary));write.csv(results,csv_file,row.names=FALSE);groups<-split(results,interaction(results$model,results$algorithm,results$R,drop=TRUE));summary_table<-do.call(rbind,lapply(groups,function(x){counts<-sort(table(x$best_model),decreasing=TRUE);data.frame(model=x$model[1L],algorithm=x$algorithm[1L],R=x$R[1L],best_model=names(counts)[1L],selected_count=as.integer(counts[1L]),selected_percent=100*as.integer(counts[1L])/nrow(x),accuracy=100*mean(x$d_hat==x$d),MAD=mean(abs(x$d_hat-x$d)))}));print(summary_table,row.names=FALSE)}
 failed <- Filter(function(x)identical(x$success,FALSE),records);if(length(failed))warning(length(failed)," simulation(s) failed; inspect ",results_file)

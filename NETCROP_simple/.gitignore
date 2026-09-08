@@ -2,8 +2,8 @@
 .RData
 .Ruserdata
 .DS_Store
+Rplots.pdf
 output/
 logs/
 **/output/
 **/logs/
-

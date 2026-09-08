@@ -50,12 +50,13 @@ chosen_auc <- function(fit, selected_model) {
   1 - mean(selected, na.rm = TRUE)
 }
 
+phase <- "NETCROP"
 one_simulation <- function(simulation) {
   rows <- list()
   fits <- list(NETCROP = list(), NCV = list(), ECV = list())
   row_id <- 0L
 
-  for (nrep in c(1L, 5L, 10L, 20L)) {
+  if (phase == "NETCROP") for (nrep in c(1L, 5L, 10L, 20L)) {
     elapsed <- system.time({
       fit <- netcrop_blockmodel(
         A = A,
@@ -72,24 +73,22 @@ one_simulation <- function(simulation) {
         retain_intermediates = "minimal"
       )
     })[["elapsed"]]
-    best_sse <- fit$overall_best$best_model[fit$overall_best$loss == "sse"]
-    best_auc <- fit$overall_best$best_model[fit$overall_best$loss == "auc_as_loss"]
-    cat(sprintf("[%d/%d] NETCROP R=%d: SSE=%s, AUC=%s (%.2fs)\n",
-                simulation, nsim, nrep, best_sse, best_auc, elapsed))
-    print(fit$overall_best, row.names = FALSE)
+    best_model <- fit$overall_best$best_model[fit$overall_best$loss == "sse"]
+    cat(sprintf("[%d/%d] NETCROP R=%d: SSE-selected model=%s (%.2fs)\n",
+                simulation, nsim, nrep, best_model, elapsed))
+    print(fit$overall_best[fit$overall_best$loss == "sse", ], row.names = FALSE)
     row_id <- row_id + 1L
     rows[[row_id]] <- data.frame(
       simulation = simulation, data = "DBLP-Conf", algorithm = "NETCROP",
       num_subnetworks = num_subnetworks, overlap_size = overlap_size,
-      nrep = nrep, best_sse = best_sse, best_auc = best_auc,
-      test_auc_at_best_sse = chosen_auc(fit, best_sse),
-      test_auc_at_best_auc = chosen_auc(fit, best_auc),
+      nrep = nrep, best_model = best_model,
+      test_auc = chosen_auc(fit, best_model),
       elapsed_seconds = elapsed
     )
     fits$NETCROP[[as.character(nrep)]] <- fit
   }
 
-  for (algorithm in c("NCV", "ECV")) {
+  if (phase == "comparison") for (algorithm in c("NCV", "ECV")) {
     for (nrep in c(1L, 20L)) {
       elapsed <- system.time({
         fit <- if (algorithm == "NCV") {
@@ -108,28 +107,37 @@ one_simulation <- function(simulation) {
           )
         }
       })[["elapsed"]]
-      best_sse <- fit$overall_best$best_model[fit$overall_best$loss == "sse"]
-      best_auc <- fit$overall_best$best_model[fit$overall_best$loss == "auc_as_loss"]
-      cat(sprintf("[%d/%d] %s R=%d: SSE=%s, AUC=%s (%.2fs)\n",
-                  simulation, nsim, algorithm, nrep, best_sse, best_auc, elapsed))
-      print(fit$overall_best, row.names = FALSE)
+      best_model <- fit$overall_best$best_model[fit$overall_best$loss == "sse"]
+      cat(sprintf("[%d/%d] %s R=%d: SSE-selected model=%s (%.2fs)\n",
+                  simulation, nsim, algorithm, nrep, best_model, elapsed))
+      print(fit$overall_best[fit$overall_best$loss == "sse", ], row.names = FALSE)
       row_id <- row_id + 1L
       rows[[row_id]] <- data.frame(
         simulation = simulation, data = "DBLP-Conf", algorithm = algorithm,
         num_subnetworks = NA_integer_, overlap_size = NA_integer_,
-        nrep = nrep, best_sse = best_sse, best_auc = best_auc,
-        test_auc_at_best_sse = chosen_auc(fit, best_sse),
-        test_auc_at_best_auc = chosen_auc(fit, best_auc),
+        nrep = nrep, best_model = best_model,
+        test_auc = chosen_auc(fit, best_model),
         elapsed_seconds = elapsed
       )
       fits[[algorithm]][[as.character(nrep)]] <- fit
     }
   }
 
-  list(summary = do.call(rbind, rows), fits = fits)
+  summary <- do.call(rbind, rows)
+  print(summary, row.names = FALSE)
+  list(summary = summary, fits = fits)
 }
 
-results_file <- file.path(output_dir, "DBLP_results.rds")
+summarize_real_data <- function(results) {
+  groups <- split(results, interaction(results$algorithm, results$nrep, results$best_model, drop=TRUE))
+  out <- do.call(rbind, lapply(groups, function(x) data.frame(
+    algorithm=x$algorithm[1L], R=x$nrep[1L], best_model=x$best_model[1L],
+    selected_count=nrow(x), selected_percent=100*nrow(x)/sum(results$algorithm==x$algorithm[1L] & results$nrep==x$nrep[1L]),
+    test_auc=mean(x$test_auc, na.rm=TRUE))))
+  print(out[order(out$algorithm,out$R,-out$selected_percent),], row.names=FALSE)
+  invisible(out)
+}
+results_file <- file.path(output_dir, "DBLP_results_netcrop.rds")
 records <- run_simulations(
   one_simulation = one_simulation,
   nsim = nsim,
@@ -139,13 +147,9 @@ records <- run_simulations(
 )
 
 successful <- records[vapply(records, function(x) isTRUE(x$success), logical(1))]
-summary_table <- do.call(rbind, lapply(successful, function(x) x$result$summary))
-utils::write.csv(summary_table, file.path(output_dir, "DBLP_results.csv"),
-                 row.names = FALSE)
-cat("\nTable 4 DBLP summary:\n")
-print(aggregate(
-  cbind(accuracy = 100 * (summary_table$best_sse == "DCBM-4"),
-        test_auc = summary_table$test_auc_at_best_sse,
-        elapsed_seconds = summary_table$elapsed_seconds),
-  summary_table[c("algorithm", "nrep")], mean
-), row.names = FALSE)
+tables <- lapply(successful, function(x) x$result$summary)
+if(length(tables)){cat("\nDBLP NETCROP outcome:\n");summarize_real_data(do.call(rbind,tables))}
+message("\nWARNING: NCV and ECV are very slow and memory consuming on DBLP and may crash R on a personal computer.")
+proceed<-TRUE;if(interactive())proceed<-tolower(trimws(readline("Proceed with DBLP NCV and ECV? [y/N]: "))) %in% c("y","yes")
+if(proceed){phase<-"comparison";comparison<-run_simulations(one_simulation,nsim=nsim,results_file=file.path(output_dir,"DBLP_results_comparison.rds"),action=action,show_progress=TRUE);tables<-c(tables,lapply(comparison[vapply(comparison,function(x)isTRUE(x$success),logical(1))],function(x)x$result$summary))}else message("NCV and ECV were skipped; DBLP NETCROP results remain saved.")
+if(length(tables)){summary_table<-do.call(rbind,tables);utils::write.csv(summary_table,file.path(output_dir,"DBLP_results.csv"),row.names=FALSE);cat("\nFinal Table 4 DBLP summary:\n");summarize_real_data(summary_table)}

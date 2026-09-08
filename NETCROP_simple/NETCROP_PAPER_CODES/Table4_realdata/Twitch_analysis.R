@@ -69,23 +69,21 @@ one_simulation <- function(simulation) {
       retain_intermediates = "minimal"
     )
   })[["elapsed"]]
-  best_sse <- fit$overall_best$best_model[fit$overall_best$loss == "sse"]
-  best_auc <- fit$overall_best$best_model[fit$overall_best$loss == "auc_as_loss"]
-  cat(sprintf("[%d/%d] NETCROP: SSE=%s, AUC=%s (%.2fs)\n",
-              simulation, nsim, best_sse, best_auc, elapsed))
-  print(fit$overall_best, row.names = FALSE)
-  list(
-    summary = data.frame(
+  best_model <- fit$overall_best$best_model[fit$overall_best$loss == "sse"]
+  cat(sprintf("[%d/%d] NETCROP: SSE-selected model=%s (%.2fs)\n",
+              simulation, nsim, best_model, elapsed))
+  print(fit$overall_best[fit$overall_best$loss == "sse", ], row.names = FALSE)
+  rows <- list(data.frame(
       simulation = simulation, data = "Twitch", algorithm = "NETCROP",
       num_subnetworks = params$num_subnetworks[[1L]],
       overlap_size = params$overlap_size[[1L]], nrep = 1L,
-      best_sse = best_sse, best_auc = best_auc,
-      test_auc_at_best_sse = chosen_auc(fit, best_sse),
-      test_auc_at_best_auc = chosen_auc(fit, best_auc),
+      best_model = best_model,
+      test_auc = chosen_auc(fit, best_model),
       elapsed_seconds = elapsed
-    ),
-    fit = fit
-  )
+    ))
+  data <- do.call(rbind, rows)
+  print(data, row.names = FALSE)
+  list(summary = data, fit = fit)
 }
 
 records <- run_simulations(
@@ -98,9 +96,6 @@ summary_table <- do.call(rbind, lapply(successful, function(x) x$result$summary)
 utils::write.csv(summary_table, file.path(output_dir, "Twitch_results.csv"),
                  row.names = FALSE)
 cat("\nTable 4 Twitch summary:\n")
-print(data.frame(
-  simulations = nrow(summary_table),
-  accuracy = 100 * mean(summary_table$best_sse == "DCBM-20"),
-  test_auc = mean(summary_table$test_auc_at_best_sse),
-  elapsed_seconds = mean(summary_table$elapsed_seconds)
-), row.names = FALSE)
+groups<-split(summary_table,summary_table$best_model)
+out<-do.call(rbind,lapply(groups,function(x)data.frame(algorithm=x$algorithm[1L],R=x$nrep[1L],best_model=x$best_model[1L],selected_count=nrow(x),selected_percent=100*nrow(x)/nrow(summary_table),test_auc=mean(x$test_auc,na.rm=TRUE))))
+print(out[order(-out$selected_percent),],row.names=FALSE)

@@ -14,6 +14,7 @@ n <- 10000L; K <- 20L; ratio <- 1 / 3; alpha <- 0.3; max_K <- 30L
 P_block <- matrix(alpha * ratio, K, K); diag(P_block) <- alpha
 partition <- netcrop_param_select(test_prop = 0.02, n = n, o_range = 0)
 
+phase <- "NETCROP"
 one_simulation <- function(simulation) {
   cat(sprintf("\nTable 1 case 2 | simulation %d/%d | generating SBM\n", simulation, nsim))
   A <- generate_sbm(n = n, K = K, community_probabilities = rep(1 / K, K),
@@ -35,6 +36,7 @@ one_simulation <- function(simulation) {
     elapsed <- proc.time()[["elapsed"]] - started
     best <- fit$overall_best$best_model[fit$overall_best$loss == "sse"][1L]
     cat(sprintf("selected %s (%.3f s)\n", best, elapsed))
+    print(fit$overall_best, row.names = FALSE)
     id <<- id + 1L
     rows[[id]] <<- data.frame(simulation, model = "SBM", n, K, out_in_ratio = ratio,
       alpha, average_degree = lambda, max_K, loss = "sse", algorithm = method,
@@ -43,15 +45,35 @@ one_simulation <- function(simulation) {
       nrep = reps, best_model = best, run_time = elapsed)
     fits[[paste(method, reps, sep = "_R")]] <<- fit
   }
-  for (r in c(1L, 5L)) run_method("NETCROP", r)
-  for (r in c(1L, 20L)) run_method("NCV", r)
-  for (r in c(1L, 20L)) run_method("ECV", r)
-  list(data = do.call(rbind, rows), fits = fits)
+  if (phase == "NETCROP") for (r in c(1L, 5L)) run_method("NETCROP", r) else {
+    for (r in c(1L, 20L)) run_method("NCV", r)
+    for (r in c(1L, 20L)) run_method("ECV", r)
+  }
+  data <- do.call(rbind, rows); print(data, row.names = FALSE)
+  list(data = data, fits = fits)
 }
 
-records <- run_simulations(one_simulation, nsim = nsim,
-  results_file = file.path(output_dir, "case2_sbmK20.rds"), action = "resume",
+summarize_results <- function(results) {
+  results$selected_K <- as.integer(sub(".*-", "", results$best_model))
+  groups <- split(results, interaction(results$model, results$algorithm, results$nrep, drop = TRUE))
+  out <- do.call(rbind, lapply(groups, function(x) { counts <- sort(table(x$best_model), decreasing = TRUE); data.frame(
+    model=x$model[1L], algorithm=x$algorithm[1L], R=x$nrep[1L], best_model=names(counts)[1L],
+    selected_count=as.integer(counts[1L]), selected_percent=100*as.integer(counts[1L])/nrow(x),
+    accuracy=100*mean(x$best_model==paste0(x$model,"-",x$K)), MAD=mean(abs(x$selected_K-x$K))) }))
+  print(out, row.names = FALSE); invisible(out)
+}
+records_netcrop <- run_simulations(one_simulation, nsim = nsim,
+  results_file = file.path(output_dir, "case2_sbmK20_netcrop.rds"), action = "resume",
   show_progress = TRUE, continue_on_error = TRUE)
-tables <- lapply(records, function(x) if (isTRUE(x$success)) x$result$data else NULL)
+tables <- lapply(records_netcrop, function(x) if (isTRUE(x$success)) x$result$data else NULL)
 tables <- Filter(Negate(is.null), tables)
-if (length(tables)) utils::write.csv(do.call(rbind, tables), file.path(output_dir, "case2_sbmK20.csv"), row.names = FALSE)
+if (length(tables)) summarize_results(do.call(rbind, tables))
+message("\nWARNING: NCV and ECV are very slow and memory consuming on this network and may crash R on a personal computer.")
+proceed <- TRUE
+if (interactive()) proceed <- tolower(trimws(readline("Proceed with NCV and ECV? [y/N]: "))) %in% c("y", "yes")
+if (proceed) {
+  phase <- "comparison"; records_comparison <- run_simulations(one_simulation, nsim=nsim,
+    results_file=file.path(output_dir,"case2_sbmK20_comparison.rds"), action="resume", show_progress=TRUE, continue_on_error=TRUE)
+  tables <- c(tables, Filter(Negate(is.null), lapply(records_comparison, function(x) if(isTRUE(x$success)) x$result$data else NULL)))
+} else message("NCV and ECV were skipped; NETCROP results remain saved.")
+if(length(tables)){results<-do.call(rbind,tables);utils::write.csv(results,file.path(output_dir,"case2_sbmK20.csv"),row.names=FALSE);cat("\nFinal Table 1 case 2 summary:\n");summarize_results(results)}
