@@ -27,11 +27,24 @@ The scripts print simulation progress, method names, intermediate selections, el
 The quick tests require only netOP and the packages installed as its core dependencies. No RStudio project is required.
 Figure S3 uses `netOP::measure_peak_ram()` when its optional `peakRAM` package is already available; otherwise it automatically records base R's garbage-collector high-water mark, so no extra installation is required.
 
+## Download the `NETCROP_simple` directory
+
+Run the following commands in a terminal. Replace `<HOME_DIR>` with a directory of your choice.
+
+```bash
+cd <HOME_DIR>
+git clone --filter=blob:none --sparse https://github.com/sayan-ch/NETCROP.git
+cd NETCROP
+git sparse-checkout set NETCROP_simple
+```
+
 ## Install netOP 0.1.1
 
-### Option A: released binary on macOS or Windows
+### Option A: released binary (recommended on macOS or Windows)
 
-This is the quickest option for supported R versions and architectures. The following code selects the netOP 0.1.1 asset for R 4.4, 4.5, or 4.6 and installs its required R packages first:
+This is the quickest option for supported R versions and architectures. The following code selects the netOP 0.1.1 asset for R 4.4, 4.5, or 4.6 and installs its required R packages first.
+
+Open R or RStudio and run the following code chunk to install `netOP`.
 
 ```r
 local({
@@ -125,12 +138,13 @@ The version check must report `0.1.1` and the final command must finish without 
 In a terminal, change to `NETCROP_simple` and start R, or set the R working directory to this folder. Confirm:
 
 ```r
+setwd("<HOME_DIR>/NETCROP/NETCROP_simple")
 getwd()
 file.exists("README.md")
 file.exists("NETCROP_PAPER_CODES")
 ```
 
-Then run one quick script at a time:
+Then run one quick script at a time. Alternatively, open the .R files manually in RStudio and click the Source button.
 
 ```r
 source("NETCROP_PAPER_CODES/Table1/xx_small_network_test.R")
