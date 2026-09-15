@@ -20,7 +20,7 @@ Start here if you want to verify the methods quickly or read the current, packag
 
 This is the original seeded paper-code version, preserved unchanged. It uses an RStudio project, a locked `renv` environment, and locally compiled R/C++ helpers. Restoring the environment and compiling its dependencies can take substantially longer, but this is the version intended for exact replication of the archived workflow.
 
-## Download the repository
+## Downloading the repository
 
 ### Full clone
 
