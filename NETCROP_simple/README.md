@@ -19,10 +19,6 @@ The scripts print simulation progress, method names, intermediate selections, el
 
 - R 4.4 or newer is recommended. netOP itself requires R 4.1 or newer.
 - netOP version 0.1.1.
-- A C++ toolchain is needed only when installing netOP from source:
-  - macOS: Xcode Command Line Tools (`xcode-select --install` in Terminal);
-  - Windows: the Rtools release matching the installed R version;
-  - Linux: GNU Make, a C++ compiler, and R development headers. Debian/Ubuntu users can install `build-essential` and `r-base-dev`.
 
 The quick tests require only netOP and the packages installed as its core dependencies. No RStudio project is required.
 Figure S3 uses `netOP::measure_peak_ram()` when its optional `peakRAM` package is already available; otherwise it automatically records base R's garbage-collector high-water mark, so no extra installation is required.
@@ -109,7 +105,13 @@ install.packages("remotes")
 remotes::install_github("sayan-ch/netOP", ref = "v0.1.1")
 ```
 
-This compiles the package and therefore requires the OS toolchain described above.
+This compiles the package and therefore requires the OS toolchain described above. This requires the following system dependencies:
+
+- A C++ toolchain is needed only when installing netOP from source:
+  - macOS: Xcode Command Line Tools (`xcode-select --install` in Terminal);
+  - Windows: the Rtools release matching the installed R version;
+  - Linux: GNU Make, a C++ compiler, and R development headers. Debian/Ubuntu users can install `build-essential` and `r-base-dev`.
+
 
 ## Verify the installation
 
