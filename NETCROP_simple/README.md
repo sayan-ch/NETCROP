@@ -137,7 +137,7 @@ The version check must report `0.1.1` and the final command must finish without 
 
 ## Run the quick tests first
 
-In a terminal, change to `NETCROP_simple` and start R, or set the R working directory to this folder. Confirm:
+Open R or RStudio and change the working directory to `NETCROP_simple`.
 
 ```r
 setwd("<HOME_DIR>/NETCROP/NETCROP_simple")
