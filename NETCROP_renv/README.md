@@ -29,7 +29,7 @@ git clone https://github.com/sayan-ch/NETCROP.git
 
 ### 2. Open the project correctly
 
-Open `NETCROP.Rproj` in RStudio. Do not open an individual R script first.
+Open `NETCROP_renv/NETCROP.Rproj` in RStudio. Do not open an individual R script first.
 
 In the R console, verify the working directory:
 
@@ -160,7 +160,7 @@ the relevant `xx_small_network_test.R` script.
 ## Repository structure
 
 ```text
-NETCROP/
+NETCROP_renv/
 ├── .Rprofile
 ├── .gitignore
 ├── NETCROP.Rproj
