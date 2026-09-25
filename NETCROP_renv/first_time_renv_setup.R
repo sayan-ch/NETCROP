@@ -12,6 +12,17 @@ if (length(missing_files) > 0L) {
 
 options(repos = c(CRAN = "https://cloud.r-project.org"))
 
+compiler_help <- if (identical(Sys.info()[["sysname"]], "Darwin")) {
+  paste0(
+    "\n\nOn macOS, if this error involves compilation, gfortran, an SDK, ",
+    "or linker failures, see the \"Compilation fails on macOS\" section ",
+    "of README.md. Apple Silicon systems may require Homebrew GCC and ",
+    "~/.R/Makevars configuration."
+  )
+} else {
+  "\nCheck the platform compiler instructions in README.md."
+}
+
 if (!requireNamespace("renv", quietly = TRUE)) {
   message("Installing renv from CRAN...")
   install.packages("renv")
@@ -60,8 +71,9 @@ tryCatch(
   error = function(error) {
     stop(
       "renv::restore() failed: ", conditionMessage(error),
-      "\nCheck your internet connection and compiler installation, then run ",
+      "\nCheck your internet connection, resolve any compiler problem, then run ",
       "source(\"first_time_renv_setup.R\") again.",
+      compiler_help,
       call. = FALSE
     )
   }
@@ -83,7 +95,7 @@ tryCatch(
     stop(
       "Packages restored, but the compiled helper smoke test failed: ",
       conditionMessage(error),
-      "\nInstall the platform compiler described in README.md and rerun this script.",
+      compiler_help,
       call. = FALSE
     )
   }

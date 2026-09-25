@@ -250,7 +250,103 @@ source("first_time_renv_setup.R")
 Do not install individual project packages manually unless the restore error
 specifically instructs you to do so.
 
-### C++ compilation fails
+### Compilation fails on macOS
+
+First confirm that Xcode Command Line Tools are installed:
+
+```bash
+xcode-select --install
+```
+
+Restart Terminal and RStudio, reopen `NETCROP.Rproj`, and rerun:
+
+```r
+source("first_time_renv_setup.R")
+```
+
+#### Additional Apple Silicon setup
+
+The following steps are only needed if compilation still fails after installing
+Xcode Command Line Tools and the error mentions `gfortran`, an SDK, linker
+failures, or incompatible system stubs. This configuration was tested on a
+clean Apple Silicon macOS system and should not be copied unchanged to an Intel
+Mac.
+
+Confirm that the machine uses Apple Silicon:
+
+```bash
+uname -m
+```
+
+The output should be `arm64`.
+
+Install [Homebrew](https://docs.brew.sh/Installation), then install GCC, which
+includes `gfortran`:
+
+```bash
+brew install gcc
+```
+
+Create the R configuration directory if necessary:
+
+```bash
+mkdir -p ~/.R
+```
+
+Create or edit `~/.R/Makevars`. This is a user-wide R configuration file and
+can affect compilation in other R projects. If the file already exists, back
+it up and merge the following settings instead of overwriting it:
+
+```bash
+cp ~/.R/Makevars ~/.R/Makevars.backup
+```
+
+Add:
+
+```make
+# Compilers
+
+FC = /opt/homebrew/bin/gfortran
+F77 = /opt/homebrew/bin/gfortran
+FLIBS = -L/opt/homebrew/lib/gcc/current -lgfortran -lquadmath
+
+# Explicitly isolate compilation away from the 27.0 stubs
+
+SDKPATH = /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+CFLAGS = -arch arm64 -isysroot $(SDKPATH)
+CXXFLAGS = -arch arm64 -isysroot $(SDKPATH)
+CXX11FLAGS = -arch arm64 -isysroot $(SDKPATH)
+CXX14FLAGS = -arch arm64 -isysroot $(SDKPATH)
+CXX17FLAGS = -arch arm64 -isysroot $(SDKPATH)
+LDFLAGS = -arch arm64 -isysroot $(SDKPATH) -L/opt/homebrew/lib
+```
+
+Verify the configuration in Terminal:
+
+```bash
+uname -m
+/opt/homebrew/bin/gfortran --version
+R CMD config FC
+R CMD config CXX17
+```
+
+Restart RStudio, reopen `NETCROP.Rproj`, and run:
+
+```r
+source("first_time_renv_setup.R")
+```
+
+Because `~/.R/Makevars` affects every R project owned by the user, revisit or
+remove this block if compilation problems appear after upgrading R, macOS,
+Xcode Command Line Tools, or Homebrew GCC.
+
+Related guidance:
+
+- [R for macOS tools](https://mac.r-project.org/tools/)
+- [R-SIG-Mac discussion: `gfortran: command not found`](https://stat.ethz.ch/pipermail/r-sig-mac/2023-July/014826.html)
+- [Stack Overflow: Installing gfortran on an Apple M1 Mac for use with R](https://stackoverflow.com/questions/69639782/installing-gfortran-on-macbook-with-apple-m1-chip-for-use-in-r)
+
+### Compilation fails on Windows or Linux
 
 Confirm that the platform compiler listed under “Install the prerequisites” is
 installed. Then restart R and rerun `first_time_renv_setup.R`.
