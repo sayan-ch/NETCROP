@@ -17,7 +17,7 @@ OUTPUT_ACTION <- run.paths$action
 
 version <- 1
 detected.cores <- parallel::detectCores()
-ncore <- if (is.na(detected.cores)) 1L else max(1L, floor(detected.cores/2)) # it can be set to anything else
+ncore <- if (is.na(detected.cores) | .Platform$OS.type == "windows" ) 1L else max(1L, floor(detected.cores/2)) # it can be set to anything else
 nsim <- 100L
 
 # Case 3 of Table 1:

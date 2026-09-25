@@ -14,7 +14,7 @@ LOG_DIR <- run.paths$log_dir
 OUTPUT_ACTION <- run.paths$action
 
 detected.cores <- parallel::detectCores()
-ncore <- if (is.na(detected.cores)) 1L else min(2L, detected.cores)
+ncore <- if (is.na(detected.cores) | .Platform$OS.type == "windows" ) 1L else max(1L, floor(detected.cores/2))
 nsim <- 2L
 n <- 500L
 K <- 3L
