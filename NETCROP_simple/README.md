@@ -15,14 +15,6 @@ Simulation results are saved twice:
 
 The scripts print simulation progress, method names, intermediate selections, elapsed time, and failures in a style similar to the original scripts.
 
-## Requirements
-
-- R 4.4 or newer is recommended. netOP itself requires R 4.1 or newer.
-- netOP version 0.1.1.
-
-The quick tests require only netOP and the packages installed as its core dependencies. No RStudio project is required.
-Figure S3 uses `netOP::measure_peak_ram()` when its optional `peakRAM` package is already available; otherwise it automatically records base R's garbage-collector high-water mark, so no extra installation is required.
-
 ## Download the `NETCROP_simple` directory
 
 Run the following commands in a terminal. Replace `<HOME_DIR>` with a directory of your choice.
@@ -35,6 +27,8 @@ git sparse-checkout set NETCROP_simple
 ```
 
 ## Install netOP
+
+Start an R session and run:
 
 ```{r}
 install.packages("netOP")
