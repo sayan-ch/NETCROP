@@ -34,84 +34,11 @@ cd NETCROP
 git sparse-checkout set NETCROP_simple
 ```
 
-## Install netOP 0.1.1
+## Install netOP
 
-### Option A: released binary (recommended on macOS or Windows)
-
-This is the quickest option for supported R versions and architectures. The following code selects the netOP 0.1.1 asset for R 4.4, 4.5, or 4.6 and installs its required R packages first.
-
-Open R or RStudio and run the following code chunk to install `netOP`.
-
-```r
-local({
-  version <- "0.1.1"
-  r_series <- paste(
-    R.version$major,
-    sub("\\..*$", "", R.version$minor),
-    sep = "."
-  )
-  if (!r_series %in% c("4.4", "4.5", "4.6")) {
-    stop("The released binary requires R 4.4.x, R 4.5.x, or R 4.6.x.")
-  }
-
-  r_architecture <- tolower(R.version$arch)
-  asset <- if (.Platform$OS.type == "windows") {
-    if (!identical(r_architecture, "x86_64")) {
-      stop("Use x86-64 R or install netOP from source on Windows ARM64.")
-    }
-    sprintf("netOP_%s_R-%s_x86_64.zip", version, r_series)
-  } else if (identical(Sys.info()[["sysname"]], "Darwin")) {
-    architecture <- if (grepl("arm64|aarch64", r_architecture)) {
-      "arm64"
-    } else if (identical(r_architecture, "x86_64")) {
-      "x86_64"
-    } else {
-      stop("No released netOP binary is available for this macOS architecture.")
-    }
-    sprintf("netOP_%s_R-%s_%s.tgz", version, r_series, architecture)
-  } else {
-    stop("Use the source installation below on Linux or another Unix system.")
-  }
-
-  repos <- getOption("repos")[["CRAN"]]
-  if (is.null(repos) || is.na(repos) || identical(repos, "@CRAN@")) {
-    repos <- "https://cloud.r-project.org"
-  }
-  install.packages(
-    c("cluster", "irlba", "Matrix", "Rcpp", "RcppEigen", "RSpectra", "tibble"),
-    repos = repos
-  )
-
-  binary_url <- sprintf(
-    "https://github.com/sayan-ch/netOP/releases/download/v%s/%s",
-    version,
-    asset
-  )
-  binary_file <- file.path(tempdir(), asset)
-  status <- download.file(binary_url, binary_file, mode = "wb")
-  if (!identical(status, 0L)) stop("The netOP binary could not be downloaded.")
-  install.packages(binary_file, repos = NULL, type = "binary")
-})
+```{r}
+install.packages("netOP")
 ```
-
-The R 4.4 and R 4.5 Apple Silicon binaries and Intel macOS binaries target macOS 11 or newer. The R 4.6 Apple Silicon binary follows the official R 4.6 runtime and requires macOS 14 or newer.
-
-### Option B: pinned GitHub source installation
-
-Use this on Linux, unsupported architectures, or when a binary is unavailable:
-
-```r
-install.packages("remotes")
-remotes::install_github("sayan-ch/netOP", ref = "v0.1.1")
-```
-
-This compiles the package and therefore requires the OS toolchain described above. This requires the following system dependencies:
-
-- A C++ toolchain is needed only when installing netOP from source:
-  - macOS: Xcode Command Line Tools (`xcode-select --install` in Terminal);
-  - Windows: the Rtools release matching the installed R version;
-  - Linux: GNU Make, a C++ compiler, and R development headers. Debian/Ubuntu users can install `build-essential` and `r-base-dev`.
-
 
 ## Verify the installation
 
