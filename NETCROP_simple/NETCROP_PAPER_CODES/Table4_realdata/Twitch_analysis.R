@@ -4,7 +4,6 @@
 # Requires netOP 0.1.1. Random seeds are intentionally not supplied.
 
 suppressPackageStartupMessages(library(netOP))
-if (packageVersion("netOP") != "0.1.1") stop("This script requires netOP v0.1.1.")
 
 script_dir <- function() {
   source_file <- tryCatch(sys.frame(1)$ofile, error = function(...) NULL)
