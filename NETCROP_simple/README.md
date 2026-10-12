@@ -146,7 +146,6 @@ Each simulation prints its bound result rows immediately before returning. Final
 
 ## Troubleshooting
 
-- **Wrong netOP version:** restart R after installing, run `find.package("netOP")`, and confirm `packageVersion("netOP") == "0.1.1"`.
 - **Compilation failure:** install the matching compiler toolchain, restart R, and retry the pinned source installation.
 - **Binary cannot be installed:** confirm that the asset matches both the R major/minor series and CPU architecture; otherwise install from source.
 - **Files cannot be found:** set the working directory to `NETCROP_simple`, not to an individual Table/Figure directory.
