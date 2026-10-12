@@ -6,7 +6,6 @@ script_dir <- if (!is.null(script_file)) dirname(normalizePath(script_file)) els
 output_dir <- file.path(script_dir, "output", "case3_dcbmK10")
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 suppressPackageStartupMessages(library(netOP))
-if (utils::packageVersion("netOP") != "0.1.1") stop("These replication scripts require netOP 0.1.1.", call. = FALSE)
 
 ncores <- max(1L, floor(parallel::detectCores() / 2), na.rm = TRUE)
 nsim <- 100L
