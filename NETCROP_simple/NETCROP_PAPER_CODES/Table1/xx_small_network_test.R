@@ -6,7 +6,6 @@ script_dir <- if (!is.null(script_file)) dirname(normalizePath(script_file)) els
 output_dir <- file.path(script_dir, "output", "xx_small_network_test")
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 suppressPackageStartupMessages(library(netOP))
-if (utils::packageVersion("netOP") != "0.1.1") stop("These replication scripts require netOP 0.1.1.", call. = FALSE)
 
 nsim <- 10L; n <- 500L; K <- 3L; max_K <- 5L; ncores <- 1L
 partition <- netcrop_param_select(test_prop = 0.1, n = n, o_range = 0)
