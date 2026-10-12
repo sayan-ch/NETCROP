@@ -40,8 +40,6 @@ Start a fresh R session and run:
 
 ```r
 library(netOP)
-packageVersion("netOP")
-stopifnot(packageVersion("netOP") == "0.1.1")
 
 A <- generate_sbm(
   n = 60,
