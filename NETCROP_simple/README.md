@@ -52,8 +52,6 @@ A <- generate_sbm(
 stopifnot(identical(dim(A), c(60L, 60L)))
 ```
 
-The version check must report `0.1.1` and the final command must finish without an error.
-
 ## Run the quick tests first
 
 Open R or RStudio and change the working directory to `NETCROP_simple`.
