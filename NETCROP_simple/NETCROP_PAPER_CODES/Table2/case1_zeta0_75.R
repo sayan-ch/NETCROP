@@ -5,8 +5,7 @@ script_dir <- local({
   if (nzchar(path)) dirname(normalizePath(path)) else normalizePath(getwd())
 })
 
-if (!requireNamespace("netOP", quietly = TRUE)) stop("Install netOP v0.1.1 first.")
-if (packageVersion("netOP") != "0.1.1") stop("This script requires netOP v0.1.1.")
+if (!requireNamespace("netOP", quietly = TRUE)) stop("Install netOP package first using `install.packages("netOP")`.")
 
 run_name <- "case1_zeta0_75"
 output_dir <- file.path(script_dir, "output", run_name)
