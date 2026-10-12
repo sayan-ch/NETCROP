@@ -4,8 +4,7 @@ script_dir <- local({
   path <- if (length(arg)) sub("^--file=", "", arg[[1L]]) else if (any(nzchar(ofiles))) tail(ofiles[nzchar(ofiles)], 1L) else ""
   if (nzchar(path)) dirname(normalizePath(path)) else normalizePath(getwd())
 })
-if (!requireNamespace("netOP", quietly=TRUE)) stop("Install netOP v0.1.1 first.")
-if (packageVersion("netOP") != "0.1.1") stop("This script requires netOP v0.1.1.")
+if (!requireNamespace("netOP", quietly = TRUE)) stop("Install netOP package first using `install.packages("netOP")`.")
 
 run_name <- "xx_small_network_test"; output_dir <- file.path(script_dir,"output",run_name); dir.create(output_dir,recursive=TRUE,showWarnings=FALSE)
 results_file <- file.path(output_dir,"small_results.rds"); csv_file <- file.path(output_dir,"small_results.csv")
