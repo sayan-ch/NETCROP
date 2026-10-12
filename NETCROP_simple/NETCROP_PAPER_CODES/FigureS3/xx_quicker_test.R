@@ -6,8 +6,7 @@ script_dir <- if (!is.null(script_file)) dirname(normalizePath(script_file)) els
 output_dir <- file.path(script_dir, "output", "xx_quicker_FigureS3_small_networks")
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 suppressPackageStartupMessages(library(netOP))
-if (utils::packageVersion("netOP") != "0.1.1") stop("These replication scripts require netOP 0.1.1.", call. = FALSE)
-
+if (!requireNamespace("netOP", quietly = TRUE)) stop("Install netOP package first using `install.packages("netOP")`.")
 nsim <- 10L
 n_values <- c(100L, 200L)
 models <- c("SBM", "DCBM")
