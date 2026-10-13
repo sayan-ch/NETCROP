@@ -9,7 +9,7 @@ suppressPackageStartupMessages(library(netOP))
 if (!requireNamespace("netOP", quietly = TRUE)) stop("Install netOP package first.")
                          
 nsim <- 10L
-n_values <- c(100L, 200L)
+n_values <- c(100L)
 models <- c("SBM", "DCBM")
 ncores_outer <- max(1L, floor(parallel::detectCores() / 2), na.rm = TRUE)
 
