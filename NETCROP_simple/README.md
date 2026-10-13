@@ -130,7 +130,7 @@ At the start of a run, choose one of the actions supported by `run_simulations()
 - `resume`: retain completed records and retry missing or failed simulations;
 - `archive`: timestamp the existing result file and begin a new run.
 
-Because `run_simulations()` writes its durable RDS after the current simulation call returns, an interrupted R process can lose work from that in-progress call. This differs from the original scripts' incremental CSV workflow.
+Because `run_simulations()` writes its durable RDS after the current simulation call returns, an interrupted R process can lose work from that in-progress call.
 
 ## Cores and progress
 
