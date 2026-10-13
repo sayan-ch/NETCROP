@@ -17,6 +17,9 @@ measure_call <- function(call) {
   if (requireNamespace("peakRAM", quietly = TRUE)) {
     return(netOP::measure_peak_ram(call))
   }
+
+  message("RAM measurement is approximate. Install peakRAM and rerun this script for an accurate memory usage report.")
+  
   invisible(gc(reset = TRUE))
   elapsed <- system.time(result <- call())[["elapsed"]]
   memory <- sum(gc()[, 7L])
