@@ -93,7 +93,7 @@ utils::write.csv(summary_table, file.path(output_dir, "Figure2_results.csv"),
 # NETCROP-selected clustering-accuracy comparison from the fitted objects.
 if (!requireNamespace("ggplot2", quietly = TRUE)) {
   stop("Figure rendering uses netOP::oracle_plotter() and requires ggplot2. The results can be accessed in the output directory.")
-}
+} else {
 figure <- oracle_plotter(
   A = lapply(values, `[[`, "A"),
   g_true = lapply(values, `[[`, "truth"), K = K,
@@ -114,3 +114,4 @@ saveRDS(list(plot = figure, accuracy_data = accuracy_data,
              plot_data = plot_data, metadata = attr(figure, "metadata")),
         file.path(output_dir, "Figure2_plot.rds"))
 print(plot_data, row.names = FALSE)
+}
