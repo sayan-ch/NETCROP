@@ -36,7 +36,7 @@ install.packages("netOP")
 
 ## Verify the installation
 
-Start a fresh R session and run:
+The following script should run without any error in R.
 
 ```r
 library(netOP)
