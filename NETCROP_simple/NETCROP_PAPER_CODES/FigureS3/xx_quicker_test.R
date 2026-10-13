@@ -19,10 +19,11 @@ measure_call <- function(call) {
   }
 
   message("RAM measurement is approximate. Install peakRAM and rerun this script for an accurate memory usage report.")
-  
+
+  gc_col <- ncol(gc())
   invisible(gc(reset = TRUE))
   elapsed <- system.time(result <- call())[["elapsed"]]
-  memory <- sum(gc()[, 7L])
+  memory <- sum(gc()[, gc_col])
   list(result = result, metrics = list(
     elapsed_seconds = elapsed,
     peak_ram_used_mib = memory,
