@@ -6,7 +6,8 @@ script_dir <- if (!is.null(script_file)) dirname(normalizePath(script_file)) els
 output_dir <- file.path(script_dir, "output", "xx_quicker_FigureS3_small_networks")
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 suppressPackageStartupMessages(library(netOP))
-if (!requireNamespace("netOP", quietly = TRUE)) stop("Install netOP package first using `install.packages("netOP")`.")
+if (!requireNamespace("netOP", quietly = TRUE)) stop("Install netOP package first.")
+                         
 nsim <- 10L
 n_values <- c(100L, 200L)
 models <- c("SBM", "DCBM")
